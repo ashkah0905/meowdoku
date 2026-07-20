@@ -197,7 +197,7 @@ function render() {
   difficultyBadge.hidden = !difficultyLabel;
   difficultyBadge.dataset.difficulty = level.difficulty;
   catCount.textContent = `${foundCatCount()}/${level.size}`;
-  clearCount.textContent = `クリア ${state.completedLevelIds.length}問`;
+  clearCount.textContent = `${state.completedLevelIds.length}問`;
   renderHome();
   lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
   autoCrossToggle.checked = state.autoCross;
