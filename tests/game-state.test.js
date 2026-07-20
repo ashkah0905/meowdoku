@@ -26,7 +26,7 @@ test("新規ゲームを既定値で作成できる", () => {
   assert.equal(game.marks.length, 25);
   assert.equal(game.lives, 3);
   assert.equal(game.autoCross, true);
-  assert.deepEqual(game.completedLevels, []);
+  assert.deepEqual(game.completedLevelIds, []);
 });
 
 test("正常な保存データを復元できる", () => {
@@ -61,19 +61,28 @@ test("古い保存データでは自動入力をオンにする", () => {
 });
 
 test("クリア済みレベルを保存データから復元できる", () => {
-  const game = { ...validGame(), completedLevels: [0, 2] };
-  assert.deepEqual(normalizeGame(game, options).completedLevels, [0, 2]);
+  const game = { ...validGame(), completedLevelIds: ["stage-001", "stage-003"] };
+  assert.deepEqual(normalizeGame(game, options).completedLevelIds, ["stage-001", "stage-003"]);
 });
 
 test("クリア記録の重複と存在しないレベルを除去する", () => {
-  const game = { ...validGame(), completedLevels: [0, 0, 2, 99, -1, "1"] };
-  assert.deepEqual(normalizeGame(game, options).completedLevels, [0, 2]);
+  const game = {
+    ...validGame(),
+    completedLevelIds: ["stage-001", "stage-001", "stage-003", "stage-999"]
+  };
+  assert.deepEqual(normalizeGame(game, options).completedLevelIds, ["stage-001", "stage-003"]);
+});
+
+test("添字形式のクリア記録をレベルIDへ移行する", () => {
+  const game = { ...validGame(), completedLevels: [0, 2] };
+  delete game.completedLevelIds;
+  assert.deepEqual(normalizeGame(game, options).completedLevelIds, ["stage-001", "stage-003"]);
 });
 
 test("旧保存形式のクリア状態をクリア記録へ移行する", () => {
   const game = { ...validGame(), levelIndex: 1, completed: true };
-  delete game.completedLevels;
-  assert.deepEqual(normalizeGame(game, options).completedLevels, [1]);
+  delete game.completedLevelIds;
+  assert.deepEqual(normalizeGame(game, options).completedLevelIds, ["stage-002"]);
 });
 
 test("保存した状態を再読み込みできる", () => {

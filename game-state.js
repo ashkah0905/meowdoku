@@ -8,14 +8,14 @@ const MEOWDOKU_GAME_STATE = (() => {
       cellCount,
       maxLives,
       autoCross = true,
-      completedLevels = []
+      completedLevelIds = []
     } = options;
     return {
       levelIndex,
       marks: Array(cellCount).fill("empty"),
       lives: maxLives,
       autoCross,
-      completedLevels: [...completedLevels],
+      completedLevelIds: [...completedLevelIds],
       completed: false,
       selected: null,
       hint: null
@@ -49,20 +49,28 @@ const MEOWDOKU_GAME_STATE = (() => {
       (Number.isInteger(saved.selected) && saved.selected >= 0 && saved.selected < cellCount)
       ? saved.selected
       : null;
-    const completedLevels = Array.isArray(saved.completedLevels)
-      ? [...new Set(saved.completedLevels)].filter(
-        (levelIndex) => Number.isInteger(levelIndex) && Boolean(levels[levelIndex])
-      )
-      : saved.completed === true
-        ? [saved.levelIndex]
+    const validLevelIds = new Set(levels.map((level) => level.id));
+    let completedLevelIds;
+    if (Array.isArray(saved.completedLevelIds)) {
+      completedLevelIds = [...new Set(saved.completedLevelIds)].filter(
+        (levelId) => validLevelIds.has(levelId)
+      );
+    } else if (Array.isArray(saved.completedLevels)) {
+      completedLevelIds = [...new Set(saved.completedLevels)]
+        .filter((levelIndex) => Number.isInteger(levelIndex) && Boolean(levels[levelIndex]))
+        .map((levelIndex) => levels[levelIndex].id);
+    } else {
+      completedLevelIds = saved.completed === true
+        ? [levels[saved.levelIndex].id]
         : [];
+    }
 
     return {
       levelIndex: saved.levelIndex,
       marks: [...saved.marks],
       lives: saved.lives,
       autoCross: typeof saved.autoCross === "boolean" ? saved.autoCross : true,
-      completedLevels,
+      completedLevelIds,
       completed: saved.completed === true,
       selected,
       hint: null

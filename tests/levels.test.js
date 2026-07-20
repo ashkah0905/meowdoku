@@ -4,8 +4,6 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const levels = require("../levels.js");
 
-const SIZE = 5;
-
 test("固定問題が6問登録されている", () => {
   assert.equal(levels.length, 6);
 });
@@ -22,8 +20,8 @@ function permutations(values) {
 }
 
 function isNonAdjacent(columns) {
-  for (let rowA = 0; rowA < SIZE; rowA += 1) {
-    for (let rowB = rowA + 1; rowB < SIZE; rowB += 1) {
+  for (let rowA = 0; rowA < columns.length; rowA += 1) {
+    for (let rowB = rowA + 1; rowB < columns.length; rowB += 1) {
       const neighboringRows = Math.abs(rowA - rowB) <= 1;
       const neighboringColumns = Math.abs(columns[rowA] - columns[rowB]) <= 1;
       if (neighboringRows && neighboringColumns) {
@@ -35,34 +33,43 @@ function isNonAdjacent(columns) {
 }
 
 function findSolutions(level) {
-  return permutations([0, 1, 2, 3, 4]).filter((columns) => {
+  return permutations(Array.from({ length: level.size }, (_, index) => index)).filter((columns) => {
     const regions = columns.map((column, row) => level.regions[row][column]);
-    return new Set(regions).size === SIZE && isNonAdjacent(columns);
+    return new Set(regions).size === level.size && isNonAdjacent(columns);
   });
 }
 
+test("レベルIDが一意でメタデータが正しい", () => {
+  assert.equal(new Set(levels.map((level) => level.id)).size, levels.length);
+  for (const level of levels) {
+    assert.match(level.id, /^stage-\d{3}$/);
+    assert.ok(["normal", "hard", "super-hard"].includes(level.difficulty));
+  }
+});
+
 for (const level of levels) {
   test(`${level.name} の形式と一意解が正しい`, () => {
-    assert.equal(level.regions.length, SIZE);
+    const size = level.size;
+    assert.equal(level.regions.length, size);
     for (const row of level.regions) {
-      assert.equal(row.length, SIZE);
+      assert.equal(row.length, size);
     }
 
     const regionIds = new Set(level.regions.flat());
-    assert.deepEqual([...regionIds].sort(), [0, 1, 2, 3, 4]);
+    assert.deepEqual([...regionIds].sort(), Array.from({ length: size }, (_, index) => index));
 
-    assert.equal(level.cats.length, SIZE);
-    assert.equal(new Set(level.cats.map(([row]) => row)).size, SIZE);
-    assert.equal(new Set(level.cats.map(([, column]) => column)).size, SIZE);
+    assert.equal(level.cats.length, size);
+    assert.equal(new Set(level.cats.map(([row]) => row)).size, size);
+    assert.equal(new Set(level.cats.map(([, column]) => column)).size, size);
     assert.equal(
       new Set(level.cats.map(([row, column]) => level.regions[row][column])).size,
-      SIZE
+      size
     );
 
-    const registeredColumns = Array(SIZE);
+    const registeredColumns = Array(size);
     for (const [row, column] of level.cats) {
-      assert.ok(row >= 0 && row < SIZE);
-      assert.ok(column >= 0 && column < SIZE);
+      assert.ok(row >= 0 && row < size);
+      assert.ok(column >= 0 && column < size);
       registeredColumns[row] = column;
     }
     assert.equal(isNonAdjacent(registeredColumns), true);

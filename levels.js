@@ -2,6 +2,9 @@
 
 const MEOWDOKU_LEVELS = [
   {
+    id: "stage-001",
+    size: 5,
+    difficulty: "normal",
     name: "レベル 1",
     regions: [
       [0, 0, 0, 0, 1],
@@ -19,6 +22,9 @@ const MEOWDOKU_LEVELS = [
     ]
   },
   {
+    id: "stage-002",
+    size: 5,
+    difficulty: "normal",
     name: "レベル 2",
     regions: [
       [1, 1, 0, 0, 0],
@@ -36,6 +42,9 @@ const MEOWDOKU_LEVELS = [
     ]
   },
   {
+    id: "stage-003",
+    size: 5,
+    difficulty: "normal",
     name: "レベル 3",
     regions: [
       [0, 2, 1, 1, 1],
@@ -53,6 +62,9 @@ const MEOWDOKU_LEVELS = [
     ]
   },
   {
+    id: "stage-004",
+    size: 5,
+    difficulty: "normal",
     name: "レベル 4",
     regions: [
       [1, 1, 4, 3, 3],
@@ -70,6 +82,9 @@ const MEOWDOKU_LEVELS = [
     ]
   },
   {
+    id: "stage-005",
+    size: 5,
+    difficulty: "normal",
     name: "レベル 5",
     regions: [
       [0, 0, 0, 4, 4],
@@ -87,6 +102,9 @@ const MEOWDOKU_LEVELS = [
     ]
   },
   {
+    id: "stage-006",
+    size: 5,
+    difficulty: "normal",
     name: "レベル 6",
     regions: [
       [3, 3, 1, 1, 1],
