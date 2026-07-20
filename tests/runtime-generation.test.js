@@ -40,3 +40,14 @@ test("生成失敗をnullとして扱える", () => {
   };
   assert.equal(generateLevel(options), null);
 });
+
+test("フォールバック生成でも同じ固定問題を保存できる", () => {
+  const options = getGenerationOptions(11);
+  const workerResult = generateLevel(options);
+  const fallbackResult = generateLevel(options);
+  assert.deepEqual(fallbackResult, workerResult);
+
+  const storage = createStorage();
+  assert.equal(saveGeneratedLevel(storage, fallbackResult.level), true);
+  assert.deepEqual(findGeneratedLevel(storage, options.id), workerResult.level);
+});

@@ -60,28 +60,48 @@ try {
   generationWorker = new Worker("./level-worker.js");
   generationWorker.addEventListener("message", (event) => {
     const { requestId, level } = event.data;
-    const resolve = generationRequests.get(requestId);
+    const request = generationRequests.get(requestId);
     generationRequests.delete(requestId);
-    if (level && generatedLevelStore.saveGeneratedLevel(localStorage, level)) {
-      if (!LEVELS.some((savedLevel) => savedLevel.id === level.id)) {
-        LEVELS.push(level);
-        LEVELS.sort((levelA, levelB) => levelNumber(levelA) - levelNumber(levelB));
-      }
-      render();
-      resolve?.(level);
-      return;
-    }
-    resolve?.(null);
+    request?.resolve(saveAndRegisterGeneratedLevel(level));
   });
   generationWorker.addEventListener("error", () => {
-    for (const resolve of generationRequests.values()) {
-      resolve(null);
+    generationWorker = null;
+    for (const request of generationRequests.values()) {
+      generateOnMainThread(request.levelNumber)
+        .then(saveAndRegisterGeneratedLevel)
+        .then(request.resolve);
     }
     generationRequests.clear();
-    pendingGeneration.clear();
   });
 } catch {
   generationWorker = null;
+}
+
+function saveAndRegisterGeneratedLevel(level) {
+  if (!level || !generatedLevelStore.saveGeneratedLevel(localStorage, level)) {
+    return null;
+  }
+  if (!LEVELS.some((savedLevel) => savedLevel.id === level.id)) {
+    LEVELS.push(level);
+    LEVELS.sort((levelA, levelB) => levelNumber(levelA) - levelNumber(levelB));
+  }
+  render();
+  return level;
+}
+
+function generateOnMainThread(targetLevelNumber) {
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      try {
+        const options = globalThis.MEOWDOKU_PROGRESSION
+          .getGenerationOptions(targetLevelNumber);
+        const result = globalThis.MEOWDOKU_LEVEL_GENERATOR.generateLevel(options);
+        resolve(result?.level ?? null);
+      } catch {
+        resolve(null);
+      }
+    }, 0);
+  });
 }
 
 function ensureGeneratedLevel(targetLevelNumber) {
@@ -95,13 +115,17 @@ function ensureGeneratedLevel(targetLevelNumber) {
     return pending;
   }
   if (!generationWorker) {
-    return Promise.resolve(null);
+    const fallback = generateOnMainThread(targetLevelNumber)
+      .then(saveAndRegisterGeneratedLevel)
+      .finally(() => pendingGeneration.delete(targetLevelNumber));
+    pendingGeneration.set(targetLevelNumber, fallback);
+    return fallback;
   }
 
   const requestId = generationRequestId;
   generationRequestId += 1;
   const request = new Promise((resolve) => {
-    generationRequests.set(requestId, resolve);
+    generationRequests.set(requestId, { levelNumber: targetLevelNumber, resolve });
     generationWorker.postMessage({ requestId, levelNumber: targetLevelNumber });
   }).finally(() => pendingGeneration.delete(targetLevelNumber));
   pendingGeneration.set(targetLevelNumber, request);
@@ -485,7 +509,8 @@ async function changeLevel(step) {
     render();
     const nextLevel = await ensureGeneratedLevel(levelNumber(getLevel()) + 1);
     if (!nextLevel) {
-      setStatus("問題を準備できませんでした。もう一度お試しください。");
+      closeDialog();
+      setStatus("問題を準備できませんでした。ページを再読み込みしてお試しください。");
       render();
       return;
     }
