@@ -51,6 +51,7 @@ const MEOWDOKU_SOLVER = (() => {
       );
       if (targets.length > 0) {
         return {
+          technique: "placed-cat-crosses",
           primary: [catIndex],
           targets,
           message: "置いたネコと同じ行・列・色、または周囲のマスにはもうネコを置けません。光っているマスは×にできます。"
@@ -65,6 +66,7 @@ const MEOWDOKU_SOLVER = (() => {
       const candidates = getUnitCandidates(level, marks, (index) => levelRowCol(level, index)[0] === row);
       if (candidates.length === 1) {
         return {
+          technique: "single-candidate",
           primary: candidates,
           targets: [],
           message: `${row + 1}行目でネコを置ける場所は、このマスだけです。`
@@ -76,6 +78,7 @@ const MEOWDOKU_SOLVER = (() => {
       const candidates = getUnitCandidates(level, marks, (index) => levelRowCol(level, index)[1] === col);
       if (candidates.length === 1) {
         return {
+          technique: "single-candidate",
           primary: candidates,
           targets: [],
           message: `${col + 1}列目でネコを置ける場所は、このマスだけです。`
@@ -91,6 +94,7 @@ const MEOWDOKU_SOLVER = (() => {
       );
       if (candidates.length === 1) {
         return {
+          technique: "single-candidate",
           primary: candidates,
           targets: [],
           message: "この色でネコを置ける場所は、このマスだけです。"
@@ -123,6 +127,7 @@ const MEOWDOKU_SOLVER = (() => {
         });
         if (targets.length > 0) {
           return {
+            technique: "region-line",
             primary: candidates,
             targets,
             message: `この色の候補は${row + 1}行目にしかありません。なので、同じ行の別の色のマスは×にできます。`
@@ -141,6 +146,7 @@ const MEOWDOKU_SOLVER = (() => {
         });
         if (targets.length > 0) {
           return {
+            technique: "region-line",
             primary: candidates,
             targets,
             message: `この色の候補は${col + 1}列目にしかありません。なので、同じ列の別の色のマスは×にできます。`
@@ -223,6 +229,7 @@ const MEOWDOKU_SOLVER = (() => {
       const contradiction = findContradictionAfterCat(level, marks, index);
       if (contradiction) {
         return {
+          technique: "contradiction",
           primary: [index],
           targets: contradiction.targets,
           message: `このマスにネコを置くと、${contradiction.label}に置ける場所がなくなります。ここは×にできます。`
