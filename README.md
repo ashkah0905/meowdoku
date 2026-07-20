@@ -37,11 +37,13 @@
 - `styles.css`: 見た目とレスポンシブ対応
 - `levels.js`: レベル定義
 - `rules.js`: 座標変換とルール判定
+- `solver.js`: ヒント探索と自動解答
 - `game-state.js`: ゲーム状態の生成・検証・保存
 - `main.js`: 入力、判定、保存、描画
 - `tests/levels.test.js`: 問題データと一意解の検証
 - `tests/rules.test.js`: ルール判定の検証
 - `tests/game-state.test.js`: 保存データの検証
+- `tests/solver.test.js`: ヒントと自動解答の検証
 
 ## テスト
 
