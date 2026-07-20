@@ -34,6 +34,13 @@ test("6x6通常面が段階的に難しくなる", () => {
   assert.ok(scores[1] < scores[2]);
 });
 
+test("Super Hard面が直前の通常面より難しい", () => {
+  const normal = analyzeLevel(levels[8]);
+  const superHard = analyzeLevel(levels[9]);
+  assert.ok(superHard.score > normal.score);
+  assert.ok(superHard.techniques.contradiction >= 5);
+});
+
 test("ロジックで解けない盤面を未解決として返す", () => {
   const level = {
     size: 4,
