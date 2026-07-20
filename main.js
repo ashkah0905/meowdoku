@@ -314,10 +314,8 @@ function handleCatPlaced(index) {
   if (isCorrectCat(index)) {
     if (state.autoCross) {
       markObviousCrosses(index);
-      setStatus("ネコを見つけました。関連するマスへ自動で×を入れました。");
-    } else {
-      setStatus("ネコを見つけました。");
     }
+    setStatus("ネコを見つけました。");
     return;
   }
 
