@@ -81,11 +81,21 @@ function render() {
   boardEl.innerHTML = "";
   for (let index = 0; index < CELL_COUNT; index += 1) {
     const [row, col] = toRowCol(index);
+    const region = level.regions[row][col];
     const cell = document.createElement("button");
     cell.type = "button";
-    cell.className = `cell color-${level.regions[row][col]}`;
+    cell.className = `cell color-${region}`;
     cell.dataset.index = String(index);
-    cell.setAttribute("aria-label", `${row + 1}行 ${col + 1}列`);
+    const markLabels = {
+      [EMPTY]: "空",
+      [CROSS]: "ネコなし",
+      [CAT]: "ネコ",
+      [WRONG]: "ミス"
+    };
+    cell.setAttribute(
+      "aria-label",
+      `${row + 1}行 ${col + 1}列、エリア${region + 1}、${markLabels[state.marks[index]]}`
+    );
 
     if (state.selected === index) {
       cell.classList.add("selected");
