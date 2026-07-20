@@ -47,6 +47,10 @@ test("レベルIDが一意でメタデータが正しい", () => {
   }
 });
 
+test("5面目がHardとして登録されている", () => {
+  assert.equal(levels[4].difficulty, "hard");
+});
+
 for (const level of levels) {
   test(`${level.name} の形式と一意解が正しい`, () => {
     const size = level.size;

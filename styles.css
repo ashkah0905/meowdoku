@@ -116,6 +116,30 @@ h1 {
   line-height: 1.2;
 }
 
+.difficulty-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.difficulty-badge[data-difficulty="hard"] {
+  background: #ffe0b8;
+  color: #a65316;
+}
+
+.difficulty-badge[data-difficulty="super-hard"] {
+  background: #f7d8e2;
+  color: #a22f59;
+}
+
+.difficulty-badge[hidden] {
+  display: none;
+}
+
 .score-row {
   display: flex;
   justify-content: center;

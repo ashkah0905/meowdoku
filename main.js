@@ -12,6 +12,7 @@ const LEVELS = globalThis.MEOWDOKU_LEVELS;
 
 const boardEl = document.querySelector("#board");
 const levelTitle = document.querySelector("#levelTitle");
+const difficultyBadge = document.querySelector("#difficultyBadge");
 const levelPickerBtn = document.querySelector("#levelPickerBtn");
 const levelDialog = document.querySelector("#levelDialog");
 const levelList = document.querySelector("#levelList");
@@ -30,6 +31,12 @@ const resultDialog = document.querySelector("#resultDialog");
 const resultTitle = document.querySelector("#resultTitle");
 const resultText = document.querySelector("#resultText");
 const closeDialogBtn = document.querySelector("#closeDialogBtn");
+
+const DIFFICULTY_LABELS = {
+  normal: "",
+  hard: "HARD",
+  "super-hard": "SUPER HARD"
+};
 
 let state = loadGame() || createGame(0);
 let dialogMode = null;
@@ -84,7 +91,11 @@ function foundCatCount() {
 function render() {
   const level = getLevel();
   const isPreviouslyCompleted = state.completedLevelIds.includes(level.id);
+  const difficultyLabel = DIFFICULTY_LABELS[level.difficulty];
   levelTitle.textContent = `${level.name}${isPreviouslyCompleted ? " ✓" : ""}`;
+  difficultyBadge.textContent = difficultyLabel;
+  difficultyBadge.hidden = !difficultyLabel;
+  difficultyBadge.dataset.difficulty = level.difficulty;
   catCount.textContent = `${foundCatCount()}/${level.size}`;
   clearCount.textContent = `${state.completedLevelIds.length}/${LEVELS.length}`;
   renderLevelList();
@@ -159,6 +170,7 @@ function renderLevelList() {
     const current = state.levelIndex === levelIndex;
     button.textContent = [
       level.name,
+      DIFFICULTY_LABELS[level.difficulty],
       completed ? "✓ クリア" : "未クリア",
       current ? "プレイ中" : ""
     ].filter(Boolean).join("・");

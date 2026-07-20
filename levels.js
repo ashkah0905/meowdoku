@@ -84,7 +84,7 @@ const MEOWDOKU_LEVELS = [
   {
     id: "stage-005",
     size: 5,
-    difficulty: "normal",
+    difficulty: "hard",
     name: "レベル 5",
     regions: [
       [0, 0, 0, 4, 4],
