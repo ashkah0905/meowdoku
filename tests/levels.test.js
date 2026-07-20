@@ -4,8 +4,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const levels = require("../levels.js");
 
-test("固定問題が6問登録されている", () => {
-  assert.equal(levels.length, 6);
+test("固定問題が7問登録されている", () => {
+  assert.equal(levels.length, 7);
 });
 
 function permutations(values) {
