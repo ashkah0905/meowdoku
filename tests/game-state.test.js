@@ -26,6 +26,7 @@ test("新規ゲームを既定値で作成できる", () => {
   assert.equal(game.marks.length, 25);
   assert.equal(game.lives, 3);
   assert.equal(game.autoCross, true);
+  assert.deepEqual(game.completedLevels, []);
 });
 
 test("正常な保存データを復元できる", () => {
@@ -57,6 +58,22 @@ test("古い保存データでは自動入力をオンにする", () => {
   const game = validGame();
   delete game.autoCross;
   assert.equal(normalizeGame(game, options).autoCross, true);
+});
+
+test("クリア済みレベルを保存データから復元できる", () => {
+  const game = { ...validGame(), completedLevels: [0, 2] };
+  assert.deepEqual(normalizeGame(game, options).completedLevels, [0, 2]);
+});
+
+test("クリア記録の重複と存在しないレベルを除去する", () => {
+  const game = { ...validGame(), completedLevels: [0, 0, 2, 99, -1, "1"] };
+  assert.deepEqual(normalizeGame(game, options).completedLevels, [0, 2]);
+});
+
+test("旧保存形式のクリア状態をクリア記録へ移行する", () => {
+  const game = { ...validGame(), levelIndex: 1, completed: true };
+  delete game.completedLevels;
+  assert.deepEqual(normalizeGame(game, options).completedLevels, [1]);
 });
 
 test("保存した状態を再読み込みできる", () => {

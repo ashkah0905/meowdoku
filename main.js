@@ -14,6 +14,7 @@ const LEVELS = globalThis.MEOWDOKU_LEVELS;
 const boardEl = document.querySelector("#board");
 const levelTitle = document.querySelector("#levelTitle");
 const catCount = document.querySelector("#catCount");
+const clearCount = document.querySelector("#clearCount");
 const lifeHearts = document.querySelector("#lifeHearts");
 const autoCrossToggle = document.querySelector("#autoCrossToggle");
 const statusText = document.querySelector("#statusText");
@@ -32,11 +33,12 @@ let dialogMode = null;
 let isAutoSolving = false;
 let dialogReturnFocus = null;
 
-function createGame(levelIndex, autoCross = true) {
+function createGame(levelIndex, autoCross = true, completedLevels = []) {
   return globalThis.MEOWDOKU_GAME_STATE.createGame(levelIndex, {
     cellCount: CELL_COUNT,
     maxLives: MAX_LIVES,
-    autoCross
+    autoCross,
+    completedLevels
   });
 }
 
@@ -71,8 +73,10 @@ function foundCatCount() {
 
 function render() {
   const level = getLevel();
-  levelTitle.textContent = level.name;
+  const isPreviouslyCompleted = state.completedLevels.includes(state.levelIndex);
+  levelTitle.textContent = `${level.name}${isPreviouslyCompleted ? " ✓" : ""}`;
   catCount.textContent = `${foundCatCount()}/${SIZE}`;
+  clearCount.textContent = `${state.completedLevels.length}/${LEVELS.length}`;
   lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
   autoCrossToggle.checked = state.autoCross;
   autoSolveBtn.hidden = !canShowAutoSolve();
@@ -278,6 +282,10 @@ function checkComplete() {
 
   if (allFound && noWrongCats) {
     state.completed = true;
+    if (!state.completedLevels.includes(state.levelIndex)) {
+      state.completedLevels.push(state.levelIndex);
+      state.completedLevels.sort((a, b) => a - b);
+    }
     setStatus("すべてのネコを見つけました。");
     openDialog("クリア", "ネコたちが満足そうに並びました。");
     return true;
@@ -314,7 +322,7 @@ function closeDialog() {
 
 function resetLevel() {
   isAutoSolving = false;
-  state = createGame(state.levelIndex, state.autoCross);
+  state = createGame(state.levelIndex, state.autoCross, state.completedLevels);
   closeDialog();
   setStatus("このレベルを最初からやり直します。");
   render();
@@ -323,7 +331,7 @@ function resetLevel() {
 function changeLevel(step) {
   isAutoSolving = false;
   const nextIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
-  state = createGame(nextIndex, state.autoCross);
+  state = createGame(nextIndex, state.autoCross, state.completedLevels);
   closeDialog();
   setStatus(`${getLevel().name} を開始しました。`);
   render();

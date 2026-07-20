@@ -4,12 +4,18 @@ const MEOWDOKU_GAME_STATE = (() => {
   const VALID_MARKS = new Set(["empty", "cross", "cat", "wrong"]);
 
   function createGame(levelIndex, options) {
-    const { cellCount, maxLives, autoCross = true } = options;
+    const {
+      cellCount,
+      maxLives,
+      autoCross = true,
+      completedLevels = []
+    } = options;
     return {
       levelIndex,
       marks: Array(cellCount).fill("empty"),
       lives: maxLives,
       autoCross,
+      completedLevels: [...completedLevels],
       completed: false,
       selected: null,
       hint: null
@@ -43,12 +49,20 @@ const MEOWDOKU_GAME_STATE = (() => {
       (Number.isInteger(saved.selected) && saved.selected >= 0 && saved.selected < cellCount)
       ? saved.selected
       : null;
+    const completedLevels = Array.isArray(saved.completedLevels)
+      ? [...new Set(saved.completedLevels)].filter(
+        (levelIndex) => Number.isInteger(levelIndex) && Boolean(levels[levelIndex])
+      )
+      : saved.completed === true
+        ? [saved.levelIndex]
+        : [];
 
     return {
       levelIndex: saved.levelIndex,
       marks: [...saved.marks],
       lives: saved.lives,
       autoCross: typeof saved.autoCross === "boolean" ? saved.autoCross : true,
+      completedLevels,
       completed: saved.completed === true,
       selected,
       hint: null

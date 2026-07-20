@@ -109,7 +109,7 @@ h1 {
 .score-row {
   display: flex;
   justify-content: center;
-  gap: 18px;
+  gap: 10px;
 }
 
 .pill {
@@ -129,6 +129,10 @@ h1 {
 .hearts {
   color: #ef4058;
   letter-spacing: 1px;
+}
+
+.progress-pill {
+  font-size: 0.78rem;
 }
 
 .rules {
