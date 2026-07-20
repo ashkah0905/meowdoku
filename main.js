@@ -33,38 +33,23 @@ let dialogMode = null;
 let isAutoSolving = false;
 
 function createGame(levelIndex, autoCross = true) {
-  return {
-    levelIndex,
-    marks: Array(CELL_COUNT).fill(EMPTY),
-    lives: MAX_LIVES,
-    autoCross,
-    completed: false,
-    selected: null,
-    hint: null
-  };
+  return globalThis.MEOWDOKU_GAME_STATE.createGame(levelIndex, {
+    cellCount: CELL_COUNT,
+    maxLives: MAX_LIVES,
+    autoCross
+  });
 }
 
 function loadGame() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (!saved || !Array.isArray(saved.marks) || saved.marks.length !== CELL_COUNT) {
-      return null;
-    }
-    if (typeof saved.levelIndex !== "number" || !LEVELS[saved.levelIndex]) {
-      return null;
-    }
-    return {
-      ...saved,
-      lives: Number.isInteger(saved.lives) ? saved.lives : MAX_LIVES,
-      autoCross: typeof saved.autoCross === "boolean" ? saved.autoCross : true
-    };
-  } catch {
-    return null;
-  }
+  return globalThis.MEOWDOKU_GAME_STATE.loadGame(localStorage, SAVE_KEY, {
+    levels: LEVELS,
+    cellCount: CELL_COUNT,
+    maxLives: MAX_LIVES
+  });
 }
 
 function saveGame() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  globalThis.MEOWDOKU_GAME_STATE.saveGame(localStorage, SAVE_KEY, state);
 }
 
 function getLevel() {
