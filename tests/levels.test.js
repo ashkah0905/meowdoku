@@ -6,6 +6,10 @@ const levels = require("../levels.js");
 
 const SIZE = 5;
 
+test("固定問題が6問登録されている", () => {
+  assert.equal(levels.length, 6);
+});
+
 function permutations(values) {
   if (values.length < 2) {
     return [values];
