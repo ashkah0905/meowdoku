@@ -1,7 +1,7 @@
 "use strict";
 
 const SAVE_KEY = "meowdoku-logic-v1";
-const SIZE = 5;
+const { SIZE, toIndex, toRowCol } = globalThis.MEOWDOKU_RULES;
 const CELL_COUNT = SIZE * SIZE;
 const MAX_LIVES = 3;
 const EMPTY = "empty";
@@ -69,14 +69,6 @@ function saveGame() {
 
 function getLevel() {
   return LEVELS[state.levelIndex];
-}
-
-function toIndex(row, col) {
-  return row * SIZE + col;
-}
-
-function toRowCol(index) {
-  return [Math.floor(index / SIZE), index % SIZE];
 }
 
 function catIndexes() {
@@ -226,24 +218,7 @@ function checkBoard() {
 }
 
 function findRuleIssues(placedCats) {
-  const issues = new Set();
-
-  for (let i = 0; i < placedCats.length; i += 1) {
-    const [rowA, colA] = toRowCol(placedCats[i]);
-    for (let j = i + 1; j < placedCats.length; j += 1) {
-      const [rowB, colB] = toRowCol(placedCats[j]);
-      const sameRow = rowA === rowB;
-      const sameCol = colA === colB;
-      const sameRegion = getRegion(placedCats[i]) === getRegion(placedCats[j]);
-      const adjacent = Math.abs(rowA - rowB) <= 1 && Math.abs(colA - colB) <= 1;
-      if (sameRow || sameCol || sameRegion || adjacent) {
-        issues.add(placedCats[i]);
-        issues.add(placedCats[j]);
-      }
-    }
-  }
-
-  return [...issues];
+  return globalThis.MEOWDOKU_RULES.findRuleIssues(getLevel(), placedCats);
 }
 
 function revealHint() {
@@ -571,18 +546,11 @@ function isLegalCandidate(index, placedCats = getPlacedCats()) {
 }
 
 function conflictsWithCat(index, catIndex) {
-  const [row, col] = toRowCol(index);
-  const [catRow, catCol] = toRowCol(catIndex);
-  const sameRow = row === catRow;
-  const sameCol = col === catCol;
-  const sameRegion = getRegion(index) === getRegion(catIndex);
-  const adjacent = Math.abs(row - catRow) <= 1 && Math.abs(col - catCol) <= 1;
-  return sameRow || sameCol || sameRegion || adjacent;
+  return globalThis.MEOWDOKU_RULES.conflictsWithCat(getLevel(), index, catIndex);
 }
 
 function getRegion(index) {
-  const [row, col] = toRowCol(index);
-  return getLevel().regions[row][col];
+  return globalThis.MEOWDOKU_RULES.getRegion(getLevel(), index);
 }
 
 function indexesInRow(row) {

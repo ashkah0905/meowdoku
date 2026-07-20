@@ -39,8 +39,10 @@
 - `index.html`: 画面構造
 - `styles.css`: 見た目とレスポンシブ対応
 - `levels.js`: レベル定義
+- `rules.js`: 座標変換とルール判定
 - `main.js`: 入力、判定、保存、描画
 - `tests/levels.test.js`: 問題データと一意解の検証
+- `tests/rules.test.js`: ルール判定の検証
 
 ## テスト
 
