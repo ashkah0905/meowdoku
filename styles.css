@@ -141,19 +141,15 @@ h1 {
 }
 
 .rule {
+  display: grid;
+  place-items: center;
   min-height: 48px;
+  margin: 0;
   padding: 6px 4px;
-  border-color: transparent;
-  background: transparent;
   color: var(--muted);
   font-size: 0.68rem;
   line-height: 1.35;
-}
-
-.rule.active {
-  border-color: var(--accent);
-  background: var(--panel);
-  color: var(--accent);
+  text-align: center;
 }
 
 .settings {
@@ -286,7 +282,7 @@ h1 {
 
 .controls {
   display: grid;
-  grid-template-columns: 1.35fr 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 8px;
   margin-top: auto;
 }

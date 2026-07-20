@@ -22,7 +22,6 @@ const nextLevelBtn = document.querySelector("#nextLevelBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const hintBtn = document.querySelector("#hintBtn");
 const autoSolveBtn = document.querySelector("#autoSolveBtn");
-const checkBtn = document.querySelector("#checkBtn");
 const resultDialog = document.querySelector("#resultDialog");
 const resultTitle = document.querySelector("#resultTitle");
 const resultText = document.querySelector("#resultText");
@@ -186,24 +185,6 @@ function markObviousCrosses(index) {
       state.marks[target] = CROSS;
     }
   }
-}
-
-function checkBoard() {
-  const placedCats = state.marks
-    .map((mark, index) => mark === CAT ? index : null)
-    .filter((index) => index !== null);
-
-  const ruleIssues = findRuleIssues(placedCats);
-  if (ruleIssues.length === 0) {
-    setStatus("現在の配置にはルール違反がありません。正解かどうかは完成時に判定します。");
-  } else {
-    setStatus("同じ行・列・色、または隣接しているネコを見直しましょう。");
-  }
-  render();
-}
-
-function findRuleIssues(placedCats) {
-  return globalThis.MEOWDOKU_RULES.findRuleIssues(getLevel(), placedCats);
 }
 
 function revealHint() {
@@ -619,7 +600,6 @@ nextLevelBtn.addEventListener("click", () => changeLevel(1));
 resetBtn.addEventListener("click", resetLevel);
 hintBtn.addEventListener("click", revealHint);
 autoSolveBtn.addEventListener("click", autoSolve);
-checkBtn.addEventListener("click", checkBoard);
 autoCrossToggle.addEventListener("change", () => {
   state.autoCross = autoCrossToggle.checked;
   setStatus(
