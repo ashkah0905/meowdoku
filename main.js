@@ -54,6 +54,8 @@ let isAutoSolving = false;
 let dialogReturnFocus = null;
 let crossDrag = null;
 let suppressNextClick = false;
+const LONG_PRESS_DELAY = 500;
+const MOVE_TOLERANCE = 8;
 let generationWorker = null;
 let generationRequestId = 0;
 const generationRequests = new Map();
@@ -289,7 +291,7 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
-function cycleMark(index) {
+function toggleCross(index) {
   if (isAutoSolving || state.completed || state.lives <= 0) {
     return;
   }
@@ -301,14 +303,24 @@ function cycleMark(index) {
     state.marks[index] = CROSS;
     setStatus("ネコがいない印をつけました。");
   } else if (current === CROSS) {
-    state.marks[index] = CAT;
-    handleCatPlaced(index);
+    state.marks[index] = EMPTY;
+    setStatus("×を取り消しました。");
   } else if (current === CAT || current === WRONG) {
     state.marks[index] = EMPTY;
     setStatus("マスを空に戻しました。");
   }
 
   checkComplete();
+  render();
+}
+
+function placeCat(index) {
+  state.selected = index;
+  state.hint = null;
+  state.marks[index] = CAT;
+  handleCatPlaced(index);
+  checkComplete();
+  navigator.vibrate?.(30);
   render();
 }
 
@@ -334,9 +346,20 @@ function finishCrossDrag(event) {
   if (!crossDrag || event.pointerId !== crossDrag.pointerId) {
     return;
   }
+
+  window.clearTimeout(crossDrag.longPressTimer);
+  const gesture = crossDrag;
   crossDrag = null;
-  setStatus("×をつけました。");
-  render();
+
+  if (event.type !== "pointercancel" && !gesture.longPressed) {
+    if (gesture.dragging) {
+      setStatus("×をつけました。");
+      render();
+    } else if (!gesture.moved) {
+      toggleCross(gesture.startIndex);
+    }
+  }
+
   window.setTimeout(() => {
     suppressNextClick = false;
   }, 0);
@@ -543,7 +566,7 @@ boardEl.addEventListener("click", (event) => {
   if (!cell) {
     return;
   }
-  cycleMark(Number(cell.dataset.index));
+  toggleCross(Number(cell.dataset.index));
 });
 
 boardEl.addEventListener("pointerdown", (event) => {
@@ -553,7 +576,6 @@ boardEl.addEventListener("pointerdown", (event) => {
     !event.isPrimary ||
     event.button !== 0 ||
     !cell ||
-    state.marks[index] !== EMPTY ||
     state.completed ||
     state.lives <= 0 ||
     isAutoSolving
@@ -561,9 +583,28 @@ boardEl.addEventListener("pointerdown", (event) => {
     return;
   }
 
-  crossDrag = { pointerId: event.pointerId, touched: new Set() };
+  crossDrag = {
+    pointerId: event.pointerId,
+    startCell: cell,
+    startIndex: index,
+    startMark: state.marks[index],
+    startX: event.clientX,
+    startY: event.clientY,
+    touched: new Set(),
+    moved: false,
+    dragging: false,
+    longPressed: false,
+    longPressTimer: null,
+  };
+
+  if (state.marks[index] === EMPTY || state.marks[index] === CROSS) {
+    crossDrag.longPressTimer = window.setTimeout(() => {
+      crossDrag.longPressed = true;
+      placeCat(index);
+    }, LONG_PRESS_DELAY);
+  }
+
   boardEl.setPointerCapture(event.pointerId);
-  markCrossDuringDrag(cell);
   suppressNextClick = true;
 });
 
@@ -572,14 +613,35 @@ boardEl.addEventListener("pointermove", (event) => {
     return;
   }
   event.preventDefault();
+  const distance = Math.hypot(
+    event.clientX - crossDrag.startX,
+    event.clientY - crossDrag.startY,
+  );
+  if (distance > MOVE_TOLERANCE) {
+    crossDrag.moved = true;
+    window.clearTimeout(crossDrag.longPressTimer);
+  }
+
   const cell = document.elementFromPoint(event.clientX, event.clientY)?.closest(".cell");
-  if (cell && boardEl.contains(cell)) {
+  if (
+    cell &&
+    boardEl.contains(cell) &&
+    cell !== crossDrag.startCell &&
+    crossDrag.startMark === EMPTY
+  ) {
+    crossDrag.dragging = true;
+    markCrossDuringDrag(crossDrag.startCell);
     markCrossDuringDrag(cell);
   }
 });
 
 boardEl.addEventListener("pointerup", finishCrossDrag);
 boardEl.addEventListener("pointercancel", finishCrossDrag);
+boardEl.addEventListener("contextmenu", (event) => {
+  if (crossDrag) {
+    event.preventDefault();
+  }
+});
 
 continueBtn.addEventListener("click", showGame);
 homeBtn.addEventListener("click", showHome);
