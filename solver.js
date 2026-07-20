@@ -4,11 +4,18 @@ const MEOWDOKU_SOLVER = (() => {
   const rules = typeof module !== "undefined" && module.exports
     ? require("./rules.js")
     : globalThis.MEOWDOKU_RULES;
-  const { SIZE, toIndex, toRowCol, getRegion, conflictsWithCat } = rules;
-  const CELL_COUNT = SIZE * SIZE;
+  const { toIndex, toRowCol, getRegion, conflictsWithCat } = rules;
   const EMPTY = "empty";
   const CROSS = "cross";
   const CAT = "cat";
+
+  function levelIndex(level, row, col) {
+    return toIndex(row, col, level.size);
+  }
+
+  function levelRowCol(level, index) {
+    return toRowCol(index, level.size);
+  }
 
   function getPlacedCats(marks) {
     return marks
@@ -54,8 +61,8 @@ const MEOWDOKU_SOLVER = (() => {
   }
 
   function findSingleCandidateHint(level, marks) {
-    for (let row = 0; row < SIZE; row += 1) {
-      const candidates = getUnitCandidates(level, marks, (index) => toRowCol(index)[0] === row);
+    for (let row = 0; row < level.size; row += 1) {
+      const candidates = getUnitCandidates(level, marks, (index) => levelRowCol(level, index)[0] === row);
       if (candidates.length === 1) {
         return {
           primary: candidates,
@@ -65,8 +72,8 @@ const MEOWDOKU_SOLVER = (() => {
       }
     }
 
-    for (let col = 0; col < SIZE; col += 1) {
-      const candidates = getUnitCandidates(level, marks, (index) => toRowCol(index)[1] === col);
+    for (let col = 0; col < level.size; col += 1) {
+      const candidates = getUnitCandidates(level, marks, (index) => levelRowCol(level, index)[1] === col);
       if (candidates.length === 1) {
         return {
           primary: candidates,
@@ -76,7 +83,7 @@ const MEOWDOKU_SOLVER = (() => {
       }
     }
 
-    for (let region = 0; region < SIZE; region += 1) {
+    for (let region = 0; region < level.size; region += 1) {
       const candidates = getUnitCandidates(
         level,
         marks,
@@ -95,7 +102,7 @@ const MEOWDOKU_SOLVER = (() => {
   }
 
   function findRegionLineHint(level, marks) {
-    for (let region = 0; region < SIZE; region += 1) {
+    for (let region = 0; region < level.size; region += 1) {
       const candidates = getUnitCandidates(
         level,
         marks,
@@ -105,11 +112,11 @@ const MEOWDOKU_SOLVER = (() => {
         continue;
       }
 
-      const rows = new Set(candidates.map((index) => toRowCol(index)[0]));
+      const rows = new Set(candidates.map((index) => levelRowCol(level, index)[0]));
       if (rows.size === 1) {
         const row = [...rows][0];
         const targets = getEmptyIndexes(marks).filter((index) => {
-          const [targetRow] = toRowCol(index);
+          const [targetRow] = levelRowCol(level, index);
           return targetRow === row &&
             getRegion(level, index) !== region &&
             isLegalCandidate(level, marks, index);
@@ -123,11 +130,11 @@ const MEOWDOKU_SOLVER = (() => {
         }
       }
 
-      const cols = new Set(candidates.map((index) => toRowCol(index)[1]));
+      const cols = new Set(candidates.map((index) => levelRowCol(level, index)[1]));
       if (cols.size === 1) {
         const col = [...cols][0];
         const targets = getEmptyIndexes(marks).filter((index) => {
-          const [, targetCol] = toRowCol(index);
+          const [, targetCol] = levelRowCol(level, index);
           return targetCol === col &&
             getRegion(level, index) !== region &&
             isLegalCandidate(level, marks, index);
@@ -145,17 +152,17 @@ const MEOWDOKU_SOLVER = (() => {
     return null;
   }
 
-  function indexesInRow(row) {
-    return Array.from({ length: SIZE }, (_, col) => toIndex(row, col));
+  function indexesInRow(level, row) {
+    return Array.from({ length: level.size }, (_, col) => levelIndex(level, row, col));
   }
 
-  function indexesInCol(col) {
-    return Array.from({ length: SIZE }, (_, row) => toIndex(row, col));
+  function indexesInCol(level, col) {
+    return Array.from({ length: level.size }, (_, row) => levelIndex(level, row, col));
   }
 
   function indexesInRegion(level, region) {
     const indexes = [];
-    for (let index = 0; index < CELL_COUNT; index += 1) {
+    for (let index = 0; index < level.size ** 2; index += 1) {
       if (getRegion(level, index) === region) {
         indexes.push(index);
       }
@@ -166,33 +173,33 @@ const MEOWDOKU_SOLVER = (() => {
   function findContradictionAfterCat(level, marks, index) {
     const simulatedCats = [...getPlacedCats(marks), index];
 
-    for (let row = 0; row < SIZE; row += 1) {
-      if (simulatedCats.some((catIndex) => toRowCol(catIndex)[0] === row)) {
+    for (let row = 0; row < level.size; row += 1) {
+      if (simulatedCats.some((catIndex) => levelRowCol(level, catIndex)[0] === row)) {
         continue;
       }
       const targets = getEmptyIndexes(marks).filter((candidate) =>
-        toRowCol(candidate)[0] === row &&
+        levelRowCol(level, candidate)[0] === row &&
         isLegalCandidate(level, marks, candidate, simulatedCats)
       );
       if (targets.length === 0) {
-        return { label: `${row + 1}行目`, targets: indexesInRow(row) };
+        return { label: `${row + 1}行目`, targets: indexesInRow(level, row) };
       }
     }
 
-    for (let col = 0; col < SIZE; col += 1) {
-      if (simulatedCats.some((catIndex) => toRowCol(catIndex)[1] === col)) {
+    for (let col = 0; col < level.size; col += 1) {
+      if (simulatedCats.some((catIndex) => levelRowCol(level, catIndex)[1] === col)) {
         continue;
       }
       const targets = getEmptyIndexes(marks).filter((candidate) =>
-        toRowCol(candidate)[1] === col &&
+        levelRowCol(level, candidate)[1] === col &&
         isLegalCandidate(level, marks, candidate, simulatedCats)
       );
       if (targets.length === 0) {
-        return { label: `${col + 1}列目`, targets: indexesInCol(col) };
+        return { label: `${col + 1}列目`, targets: indexesInCol(level, col) };
       }
     }
 
-    for (let region = 0; region < SIZE; region += 1) {
+    for (let region = 0; region < level.size; region += 1) {
       if (simulatedCats.some((catIndex) => getRegion(level, catIndex) === region)) {
         continue;
       }
@@ -234,7 +241,7 @@ const MEOWDOKU_SOLVER = (() => {
 
   function getConflictingIndexes(level, index) {
     const indexes = [];
-    for (let target = 0; target < CELL_COUNT; target += 1) {
+    for (let target = 0; target < level.size ** 2; target += 1) {
       if (target !== index && conflictsWithCat(level, target, index)) {
         indexes.push(target);
       }
@@ -261,29 +268,29 @@ const MEOWDOKU_SOLVER = (() => {
   }
 
   function findWorkingSingleCandidate(level, working) {
-    for (let row = 0; row < SIZE; row += 1) {
+    for (let row = 0; row < level.size; row += 1) {
       const candidates = getWorkingUnitCandidates(
         level,
         working,
-        (index) => toRowCol(index)[0] === row
+        (index) => levelRowCol(level, index)[0] === row
       );
       if (candidates.length === 1) {
         return candidates[0];
       }
     }
 
-    for (let col = 0; col < SIZE; col += 1) {
+    for (let col = 0; col < level.size; col += 1) {
       const candidates = getWorkingUnitCandidates(
         level,
         working,
-        (index) => toRowCol(index)[1] === col
+        (index) => levelRowCol(level, index)[1] === col
       );
       if (candidates.length === 1) {
         return candidates[0];
       }
     }
 
-    for (let region = 0; region < SIZE; region += 1) {
+    for (let region = 0; region < level.size; region += 1) {
       const candidates = getWorkingUnitCandidates(
         level,
         working,
@@ -298,14 +305,14 @@ const MEOWDOKU_SOLVER = (() => {
   }
 
   function buildAutoSolvePlan(level, marks) {
-    const cats = new Set(level.cats.map(([row, col]) => toIndex(row, col)));
+    const cats = new Set(level.cats.map(([row, col]) => levelIndex(level, row, col)));
     const working = [...marks];
     const additions = [];
     let changed = true;
 
     while (changed) {
       changed = false;
-      for (let index = 0; index < CELL_COUNT; index += 1) {
+      for (let index = 0; index < level.size ** 2; index += 1) {
         if (working[index] === CAT) {
           for (const target of getConflictingIndexes(level, index)) {
             if (working[target] === EMPTY) {

@@ -197,7 +197,7 @@ h1 {
   width: min(100%, 286px);
   aspect-ratio: 1;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(var(--board-size, 5), 1fr);
   gap: var(--cell-gap);
   padding: var(--cell-gap);
   border-radius: 8px;
@@ -236,6 +236,8 @@ h1 {
 .cell.color-2 { background: #ffc44f; }
 .cell.color-3 { background: #a58c45; }
 .cell.color-4 { background: #aaa7d7; }
+.cell.color-5 { background: #73bea0; }
+.cell.color-6 { background: #e58b63; }
 
 .mark {
   position: absolute;

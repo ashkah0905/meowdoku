@@ -1,8 +1,7 @@
 "use strict";
 
 const SAVE_KEY = "meowdoku-logic-v1";
-const { SIZE, toIndex, toRowCol } = globalThis.MEOWDOKU_RULES;
-const CELL_COUNT = SIZE * SIZE;
+const { toIndex, toRowCol } = globalThis.MEOWDOKU_RULES;
 const MAX_LIVES = 3;
 const EMPTY = "empty";
 const CROSS = "cross";
@@ -39,7 +38,7 @@ let dialogReturnFocus = null;
 
 function createGame(levelIndex, autoCross = true, completedLevelIds = []) {
   return globalThis.MEOWDOKU_GAME_STATE.createGame(levelIndex, {
-    cellCount: CELL_COUNT,
+    size: LEVELS[levelIndex].size,
     maxLives: MAX_LIVES,
     autoCross,
     completedLevelIds
@@ -49,7 +48,6 @@ function createGame(levelIndex, autoCross = true, completedLevelIds = []) {
 function loadGame() {
   return globalThis.MEOWDOKU_GAME_STATE.loadGame(localStorage, SAVE_KEY, {
     levels: LEVELS,
-    cellCount: CELL_COUNT,
     maxLives: MAX_LIVES
   });
 }
@@ -62,8 +60,16 @@ function getLevel() {
   return LEVELS[state.levelIndex];
 }
 
+function getSize() {
+  return getLevel().size;
+}
+
+function getCellCount() {
+  return getSize() ** 2;
+}
+
 function catIndexes() {
-  return new Set(getLevel().cats.map(([row, col]) => toIndex(row, col)));
+  return new Set(getLevel().cats.map(([row, col]) => toIndex(row, col, getSize())));
 }
 
 function isCorrectCat(index) {
@@ -79,7 +85,7 @@ function render() {
   const level = getLevel();
   const isPreviouslyCompleted = state.completedLevelIds.includes(level.id);
   levelTitle.textContent = `${level.name}${isPreviouslyCompleted ? " ✓" : ""}`;
-  catCount.textContent = `${foundCatCount()}/${SIZE}`;
+  catCount.textContent = `${foundCatCount()}/${level.size}`;
   clearCount.textContent = `${state.completedLevelIds.length}/${LEVELS.length}`;
   renderLevelList();
   lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
@@ -88,8 +94,9 @@ function render() {
   autoSolveBtn.disabled = isAutoSolving;
 
   boardEl.innerHTML = "";
-  for (let index = 0; index < CELL_COUNT; index += 1) {
-    const [row, col] = toRowCol(index);
+  boardEl.style.setProperty("--board-size", String(level.size));
+  for (let index = 0; index < getCellCount(); index += 1) {
+    const [row, col] = toRowCol(index, level.size);
     const region = level.regions[row][col];
     const cell = document.createElement("button");
     cell.type = "button";
@@ -211,15 +218,15 @@ function handleCatPlaced(index) {
 }
 
 function markObviousCrosses(index) {
-  const [row, col] = toRowCol(index);
+  const [row, col] = toRowCol(index, getSize());
   const region = getLevel().regions[row][col];
 
-  for (let target = 0; target < CELL_COUNT; target += 1) {
+  for (let target = 0; target < getCellCount(); target += 1) {
     if (state.marks[target] !== EMPTY) {
       continue;
     }
 
-    const [targetRow, targetCol] = toRowCol(target);
+    const [targetRow, targetCol] = toRowCol(target, getSize());
     const sameRow = targetRow === row;
     const sameCol = targetCol === col;
     const sameRegion = getLevel().regions[targetRow][targetCol] === region;
@@ -259,7 +266,7 @@ function canShowAutoSolve() {
     return false;
   }
 
-  const remaining = SIZE - foundCatCount();
+  const remaining = getSize() - foundCatCount();
   return remaining > 0 && remaining <= 2 && Boolean(buildAutoSolvePlan());
 }
 

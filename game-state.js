@@ -6,13 +6,14 @@ const MEOWDOKU_GAME_STATE = (() => {
   function createGame(levelIndex, options) {
     const {
       cellCount,
+      size,
       maxLives,
       autoCross = true,
       completedLevelIds = []
     } = options;
     return {
       levelIndex,
-      marks: Array(cellCount).fill("empty"),
+      marks: Array(cellCount ?? size * size).fill("empty"),
       lives: maxLives,
       autoCross,
       completedLevelIds: [...completedLevelIds],
@@ -23,13 +24,14 @@ const MEOWDOKU_GAME_STATE = (() => {
   }
 
   function normalizeGame(saved, options) {
-    const { levels, cellCount, maxLives } = options;
+    const { levels, maxLives } = options;
     if (!saved || typeof saved !== "object") {
       return null;
     }
     if (!Number.isInteger(saved.levelIndex) || !levels[saved.levelIndex]) {
       return null;
     }
+    const cellCount = levels[saved.levelIndex].size ** 2;
     if (
       !Array.isArray(saved.marks) ||
       saved.marks.length !== cellCount ||

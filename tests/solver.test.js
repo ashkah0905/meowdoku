@@ -13,7 +13,7 @@ const {
 const level = levels[0];
 
 function emptyMarks() {
-  return Array(25).fill("empty");
+  return Array(level.size ** 2).fill("empty");
 }
 
 test("配置済みのネコから除外できるマスを示す", () => {
@@ -51,7 +51,7 @@ test("仮置きで候補がなくなる矛盾を示す", () => {
 test("残り一匹を自動解答プランにできる", () => {
   const marks = emptyMarks();
   for (const [row, column] of level.cats.slice(0, 4)) {
-    marks[row * 5 + column] = "cat";
+    marks[row * level.size + column] = "cat";
   }
   assert.deepEqual(buildAutoSolvePlan(level, marks), [23]);
 });
@@ -75,4 +75,20 @@ test("競合するマスを重複なく返す", () => {
   assert.ok(conflicts.includes(0));
   assert.ok(conflicts.includes(6));
   assert.ok(!conflicts.includes(1));
+});
+
+test("6x6でも配置済みのネコからヒントを作れる", () => {
+  const largeLevel = {
+    size: 6,
+    regions: Array.from({ length: 6 }, (_, row) =>
+      Array.from({ length: 6 }, (_, column) => (row + column) % 6)
+    ),
+    cats: []
+  };
+  const marks = Array(largeLevel.size ** 2).fill("empty");
+  marks[0] = "cat";
+  const hint = findLogicHint(largeLevel, marks);
+  assert.deepEqual(hint.primary, [0]);
+  assert.ok(hint.targets.includes(5));
+  assert.ok(hint.targets.includes(30));
 });

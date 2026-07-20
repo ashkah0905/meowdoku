@@ -95,3 +95,16 @@ test("保存した状態を再読み込みできる", () => {
   saveGame(storage, "save", game);
   assert.deepEqual(loadGame(storage, "save", options), game);
 });
+
+test("6x6レベルの36マスを復元できる", () => {
+  const largeLevel = {
+    id: "stage-007",
+    size: 6,
+    regions: Array.from({ length: 6 }, () => Array(6).fill(0)),
+    cats: []
+  };
+  const largeOptions = { levels: [largeLevel], maxLives: 3 };
+  const game = createGame(0, { size: largeLevel.size, maxLives: 3 });
+  assert.equal(game.marks.length, 36);
+  assert.deepEqual(normalizeGame(game, largeOptions), game);
+});

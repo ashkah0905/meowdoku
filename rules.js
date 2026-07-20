@@ -1,24 +1,22 @@
 "use strict";
 
 const MEOWDOKU_RULES = (() => {
-  const SIZE = 5;
-
-  function toIndex(row, column) {
-    return row * SIZE + column;
+  function toIndex(row, column, size) {
+    return row * size + column;
   }
 
-  function toRowCol(index) {
-    return [Math.floor(index / SIZE), index % SIZE];
+  function toRowCol(index, size) {
+    return [Math.floor(index / size), index % size];
   }
 
   function getRegion(level, index) {
-    const [row, column] = toRowCol(index);
+    const [row, column] = toRowCol(index, level.size);
     return level.regions[row][column];
   }
 
   function conflictsWithCat(level, index, catIndex) {
-    const [row, column] = toRowCol(index);
-    const [catRow, catColumn] = toRowCol(catIndex);
+    const [row, column] = toRowCol(index, level.size);
+    const [catRow, catColumn] = toRowCol(catIndex, level.size);
 
     return row === catRow ||
       column === catColumn ||
@@ -45,7 +43,6 @@ const MEOWDOKU_RULES = (() => {
   }
 
   return {
-    SIZE,
     toIndex,
     toRowCol,
     getRegion,
