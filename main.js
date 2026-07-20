@@ -8,7 +8,16 @@ const CROSS = "cross";
 const CAT = "cat";
 const WRONG = "wrong";
 
-const LEVELS = globalThis.MEOWDOKU_LEVELS;
+const generatedLevelStore = globalThis.MEOWDOKU_GENERATED_LEVEL_STORE;
+
+function levelNumber(level) {
+  return Number(level.id.slice(6));
+}
+
+const LEVELS = [
+  ...globalThis.MEOWDOKU_LEVELS,
+  ...generatedLevelStore.loadGeneratedLevels(localStorage)
+].sort((levelA, levelB) => levelNumber(levelA) - levelNumber(levelB));
 
 const boardEl = document.querySelector("#board");
 const levelTitle = document.querySelector("#levelTitle");
@@ -42,6 +51,71 @@ let state = loadGame() || createGame(0);
 let dialogMode = null;
 let isAutoSolving = false;
 let dialogReturnFocus = null;
+let generationWorker = null;
+let generationRequestId = 0;
+const generationRequests = new Map();
+const pendingGeneration = new Map();
+
+try {
+  generationWorker = new Worker("./level-worker.js");
+  generationWorker.addEventListener("message", (event) => {
+    const { requestId, level } = event.data;
+    const resolve = generationRequests.get(requestId);
+    generationRequests.delete(requestId);
+    if (level && generatedLevelStore.saveGeneratedLevel(localStorage, level)) {
+      if (!LEVELS.some((savedLevel) => savedLevel.id === level.id)) {
+        LEVELS.push(level);
+        LEVELS.sort((levelA, levelB) => levelNumber(levelA) - levelNumber(levelB));
+      }
+      render();
+      resolve?.(level);
+      return;
+    }
+    resolve?.(null);
+  });
+  generationWorker.addEventListener("error", () => {
+    for (const resolve of generationRequests.values()) {
+      resolve(null);
+    }
+    generationRequests.clear();
+    pendingGeneration.clear();
+  });
+} catch {
+  generationWorker = null;
+}
+
+function ensureGeneratedLevel(targetLevelNumber) {
+  const levelId = `stage-${String(targetLevelNumber).padStart(3, "0")}`;
+  const existing = LEVELS.find((level) => level.id === levelId);
+  if (existing) {
+    return Promise.resolve(existing);
+  }
+  const pending = pendingGeneration.get(targetLevelNumber);
+  if (pending) {
+    return pending;
+  }
+  if (!generationWorker) {
+    return Promise.resolve(null);
+  }
+
+  const requestId = generationRequestId;
+  generationRequestId += 1;
+  const request = new Promise((resolve) => {
+    generationRequests.set(requestId, resolve);
+    generationWorker.postMessage({ requestId, levelNumber: targetLevelNumber });
+  }).finally(() => pendingGeneration.delete(targetLevelNumber));
+  pendingGeneration.set(targetLevelNumber, request);
+  return request;
+}
+
+async function prefetchGeneratedLevels(firstLevelNumber, count) {
+  for (let offset = 0; offset < count; offset += 1) {
+    const level = await ensureGeneratedLevel(firstLevelNumber + offset);
+    if (!level) {
+      return;
+    }
+  }
+}
 
 function createGame(levelIndex, autoCross = true, completedLevelIds = []) {
   return globalThis.MEOWDOKU_GAME_STATE.createGame(levelIndex, {
@@ -92,12 +166,13 @@ function render() {
   const level = getLevel();
   const isPreviouslyCompleted = state.completedLevelIds.includes(level.id);
   const difficultyLabel = DIFFICULTY_LABELS[level.difficulty];
+  boardEl.setAttribute("aria-label", `${level.size}行${level.size}列の盤面`);
   levelTitle.textContent = `${level.name}${isPreviouslyCompleted ? " ✓" : ""}`;
   difficultyBadge.textContent = difficultyLabel;
   difficultyBadge.hidden = !difficultyLabel;
   difficultyBadge.dataset.difficulty = level.difficulty;
   catCount.textContent = `${foundCatCount()}/${level.size}`;
-  clearCount.textContent = `${state.completedLevelIds.length}/${LEVELS.length}`;
+  clearCount.textContent = `クリア ${state.completedLevelIds.length}問`;
   renderLevelList();
   lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
   autoCrossToggle.checked = state.autoCross;
@@ -398,9 +473,23 @@ function selectLevel(levelIndex) {
   closeDialog();
   setStatus(`${getLevel().name} を開始しました。`);
   render();
+  const selectedLevelNumber = levelNumber(getLevel());
+  if (selectedLevelNumber > globalThis.MEOWDOKU_LEVELS.length) {
+    prefetchGeneratedLevels(selectedLevelNumber + 1, 2);
+  }
 }
 
-function changeLevel(step) {
+async function changeLevel(step) {
+  if (step > 0 && state.levelIndex === LEVELS.length - 1) {
+    setStatus("次の問題を準備しています…");
+    render();
+    const nextLevel = await ensureGeneratedLevel(levelNumber(getLevel()) + 1);
+    if (!nextLevel) {
+      setStatus("問題を準備できませんでした。もう一度お試しください。");
+      render();
+      return;
+    }
+  }
   const nextIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
   selectLevel(nextIndex);
 }
@@ -469,3 +558,4 @@ document.addEventListener("keydown", (event) => {
 });
 
 render();
+prefetchGeneratedLevels(11, 2);
