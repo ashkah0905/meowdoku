@@ -13,6 +13,10 @@ const LEVELS = globalThis.MEOWDOKU_LEVELS;
 
 const boardEl = document.querySelector("#board");
 const levelTitle = document.querySelector("#levelTitle");
+const levelPickerBtn = document.querySelector("#levelPickerBtn");
+const levelDialog = document.querySelector("#levelDialog");
+const levelList = document.querySelector("#levelList");
+const closeLevelDialogBtn = document.querySelector("#closeLevelDialogBtn");
 const catCount = document.querySelector("#catCount");
 const clearCount = document.querySelector("#clearCount");
 const lifeHearts = document.querySelector("#lifeHearts");
@@ -77,6 +81,7 @@ function render() {
   levelTitle.textContent = `${level.name}${isPreviouslyCompleted ? " ✓" : ""}`;
   catCount.textContent = `${foundCatCount()}/${SIZE}`;
   clearCount.textContent = `${state.completedLevels.length}/${LEVELS.length}`;
+  renderLevelList();
   lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
   autoCrossToggle.checked = state.autoCross;
   autoSolveBtn.hidden = !canShowAutoSolve();
@@ -133,6 +138,30 @@ function render() {
   }
 
   saveGame();
+}
+
+function renderLevelList() {
+  levelList.innerHTML = "";
+  LEVELS.forEach((level, levelIndex) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "level-option";
+    button.dataset.levelIndex = String(levelIndex);
+
+    const completed = state.completedLevels.includes(levelIndex);
+    const current = state.levelIndex === levelIndex;
+    button.textContent = [
+      level.name,
+      completed ? "✓ クリア" : "未クリア",
+      current ? "プレイ中" : ""
+    ].filter(Boolean).join("・");
+
+    if (current) {
+      button.classList.add("current");
+      button.setAttribute("aria-current", "true");
+    }
+    levelList.appendChild(button);
+  });
 }
 
 function setStatus(message) {
@@ -328,13 +357,33 @@ function resetLevel() {
   render();
 }
 
-function changeLevel(step) {
+function openLevelDialog() {
+  renderLevelList();
+  levelDialog.classList.add("open");
+  levelDialog.setAttribute("aria-hidden", "false");
+  levelList.querySelector(`[data-level-index="${state.levelIndex}"]`)?.focus();
+}
+
+function closeLevelDialog() {
+  levelDialog.classList.remove("open");
+  levelDialog.setAttribute("aria-hidden", "true");
+  levelPickerBtn.focus();
+}
+
+function selectLevel(levelIndex) {
   isAutoSolving = false;
-  const nextIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
-  state = createGame(nextIndex, state.autoCross, state.completedLevels);
+  state = createGame(levelIndex, state.autoCross, state.completedLevels);
+  if (levelDialog.classList.contains("open")) {
+    closeLevelDialog();
+  }
   closeDialog();
   setStatus(`${getLevel().name} を開始しました。`);
   render();
+}
+
+function changeLevel(step) {
+  const nextIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
+  selectLevel(nextIndex);
 }
 
 boardEl.addEventListener("click", (event) => {
@@ -347,6 +396,16 @@ boardEl.addEventListener("click", (event) => {
 
 prevLevelBtn.addEventListener("click", () => changeLevel(-1));
 nextLevelBtn.addEventListener("click", () => changeLevel(1));
+levelPickerBtn.addEventListener("click", openLevelDialog);
+closeLevelDialogBtn.addEventListener("click", closeLevelDialog);
+levelDialog.querySelector(".dialog-backdrop").addEventListener("click", closeLevelDialog);
+levelList.addEventListener("click", (event) => {
+  const option = event.target.closest(".level-option");
+  if (!option) {
+    return;
+  }
+  selectLevel(Number(option.dataset.levelIndex));
+});
 resetBtn.addEventListener("click", resetLevel);
 hintBtn.addEventListener("click", revealHint);
 autoSolveBtn.addEventListener("click", autoSolve);
@@ -369,6 +428,11 @@ closeDialogBtn.addEventListener("click", () => {
 resultDialog.querySelector(".dialog-backdrop").addEventListener("click", closeDialog);
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && levelDialog.classList.contains("open")) {
+    closeLevelDialog();
+    return;
+  }
+
   if (event.key === "Escape" && resultDialog.classList.contains("open")) {
     closeDialog();
     return;

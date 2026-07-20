@@ -91,6 +91,16 @@ button:focus-visible,
   text-align: center;
 }
 
+.level-picker-button {
+  min-height: 0;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.72rem;
+}
+
 .eyebrow {
   margin: 0 0 2px;
   color: var(--muted);
@@ -365,6 +375,24 @@ h1 {
 .dialog-card p {
   margin: 0 0 16px;
   color: var(--muted);
+}
+
+.level-list {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.level-option {
+  min-height: 48px;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.level-option.current {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .result-cat {

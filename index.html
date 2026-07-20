@@ -13,6 +13,7 @@
       <div class="title-block">
         <p class="eyebrow">Meow Logic</p>
         <h1 id="levelTitle">レベル 1</h1>
+        <button id="levelPickerBtn" class="level-picker-button" type="button">レベルを選ぶ</button>
       </div>
       <button id="nextLevelBtn" class="icon-button" type="button" aria-label="次のレベル">→</button>
     </header>
@@ -58,6 +59,15 @@
       <h2 id="resultTitle">クリア</h2>
       <p id="resultText">すべてのネコを見つけました。</p>
       <button id="closeDialogBtn" type="button">つづける</button>
+    </section>
+  </div>
+
+  <div id="levelDialog" class="dialog" aria-hidden="true">
+    <div class="dialog-backdrop"></div>
+    <section class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="levelDialogTitle">
+      <h2 id="levelDialogTitle">レベルを選ぶ</h2>
+      <div id="levelList" class="level-list"></div>
+      <button id="closeLevelDialogBtn" type="button">閉じる</button>
     </section>
   </div>
 
