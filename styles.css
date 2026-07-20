@@ -269,6 +269,7 @@ h1 {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 12px 26px rgba(71, 48, 54, 0.12);
+  touch-action: none;
 }
 
 .cell {

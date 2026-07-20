@@ -52,6 +52,8 @@ let state = loadGame() || createGame(0);
 let dialogMode = null;
 let isAutoSolving = false;
 let dialogReturnFocus = null;
+let crossDrag = null;
+let suppressNextClick = false;
 let generationWorker = null;
 let generationRequestId = 0;
 const generationRequests = new Map();
@@ -310,6 +312,36 @@ function cycleMark(index) {
   render();
 }
 
+function markCrossDuringDrag(cell) {
+  const index = Number(cell.dataset.index);
+  if (
+    crossDrag.touched.has(index) ||
+    state.marks[index] !== EMPTY
+  ) {
+    return;
+  }
+
+  crossDrag.touched.add(index);
+  state.marks[index] = CROSS;
+  state.selected = index;
+  state.hint = null;
+  const mark = cell.querySelector(".mark");
+  mark.className = "mark cross-mark";
+  mark.textContent = "×";
+}
+
+function finishCrossDrag(event) {
+  if (!crossDrag || event.pointerId !== crossDrag.pointerId) {
+    return;
+  }
+  crossDrag = null;
+  setStatus("×をつけました。");
+  render();
+  window.setTimeout(() => {
+    suppressNextClick = false;
+  }, 0);
+}
+
 function handleCatPlaced(index) {
   if (isCorrectCat(index)) {
     if (state.autoCross) {
@@ -503,12 +535,51 @@ async function changeLevel(step) {
 }
 
 boardEl.addEventListener("click", (event) => {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    return;
+  }
   const cell = event.target.closest(".cell");
   if (!cell) {
     return;
   }
   cycleMark(Number(cell.dataset.index));
 });
+
+boardEl.addEventListener("pointerdown", (event) => {
+  const cell = event.target.closest(".cell");
+  const index = Number(cell?.dataset.index);
+  if (
+    !event.isPrimary ||
+    event.button !== 0 ||
+    !cell ||
+    state.marks[index] !== EMPTY ||
+    state.completed ||
+    state.lives <= 0 ||
+    isAutoSolving
+  ) {
+    return;
+  }
+
+  crossDrag = { pointerId: event.pointerId, touched: new Set() };
+  boardEl.setPointerCapture(event.pointerId);
+  markCrossDuringDrag(cell);
+  suppressNextClick = true;
+});
+
+boardEl.addEventListener("pointermove", (event) => {
+  if (!crossDrag || event.pointerId !== crossDrag.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  const cell = document.elementFromPoint(event.clientX, event.clientY)?.closest(".cell");
+  if (cell && boardEl.contains(cell)) {
+    markCrossDuringDrag(cell);
+  }
+});
+
+boardEl.addEventListener("pointerup", finishCrossDrag);
+boardEl.addEventListener("pointercancel", finishCrossDrag);
 
 continueBtn.addEventListener("click", showGame);
 homeBtn.addEventListener("click", showHome);
