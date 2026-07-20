@@ -30,6 +30,7 @@ const closeDialogBtn = document.querySelector("#closeDialogBtn");
 let state = loadGame() || createGame(0);
 let dialogMode = null;
 let isAutoSolving = false;
+let dialogReturnFocus = null;
 
 function createGame(levelIndex, autoCross = true) {
   return globalThis.MEOWDOKU_GAME_STATE.createGame(levelIndex, {
@@ -134,7 +135,7 @@ function cycleMark(index) {
   const current = state.marks[index];
   if (current === EMPTY) {
     state.marks[index] = CROSS;
-    setStatus("ここにはいなさそう、という印をつけました。");
+    setStatus("ネコがいない印をつけました。");
   } else if (current === CROSS) {
     state.marks[index] = CAT;
     handleCatPlaced(index);
@@ -160,7 +161,7 @@ function handleCatPlaced(index) {
 
   state.marks[index] = WRONG;
   state.lives = Math.max(0, state.lives - 1);
-  setStatus("そこにはネコはいません。ライフが1つ減りました。");
+  setStatus("ミス！ ライフが1つ減りました。");
   if (state.lives === 0) {
     openDialog("ゲームオーバー", "ライフがなくなりました。リセットして再挑戦できます。");
   }
@@ -557,17 +558,29 @@ function checkComplete() {
 }
 
 function openDialog(title, text) {
+  const activeElement = document.activeElement;
+  dialogReturnFocus = Number.isInteger(state.selected)
+    ? { cellIndex: String(state.selected) }
+    : { element: activeElement };
   dialogMode = title === "クリア" ? "clear" : "message";
   resultTitle.textContent = title;
   resultText.textContent = text;
+  closeDialogBtn.textContent = dialogMode === "clear" ? "つづける" : "もどる";
   resultDialog.classList.add("open");
   resultDialog.setAttribute("aria-hidden", "false");
+  closeDialogBtn.focus();
 }
 
 function closeDialog() {
   dialogMode = null;
   resultDialog.classList.remove("open");
   resultDialog.setAttribute("aria-hidden", "true");
+  if (dialogReturnFocus?.cellIndex !== undefined) {
+    boardEl.querySelector(`[data-index="${dialogReturnFocus.cellIndex}"]`)?.focus();
+  } else {
+    dialogReturnFocus?.element?.focus();
+  }
+  dialogReturnFocus = null;
 }
 
 function resetLevel() {
@@ -616,8 +629,14 @@ closeDialogBtn.addEventListener("click", () => {
     closeDialog();
   }
 });
+resultDialog.querySelector(".dialog-backdrop").addEventListener("click", closeDialog);
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && resultDialog.classList.contains("open")) {
+    closeDialog();
+    return;
+  }
+
   if (event.key === "ArrowLeft") {
     changeLevel(-1);
   } else if (event.key === "ArrowRight") {
