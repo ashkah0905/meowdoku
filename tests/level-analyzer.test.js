@@ -28,6 +28,12 @@ test("使用した解法を集計する", () => {
   assert.ok(result.techniques["single-candidate"] > 0);
 });
 
+test("6x6通常面が段階的に難しくなる", () => {
+  const scores = levels.slice(6, 9).map((level) => analyzeLevel(level).score);
+  assert.ok(scores[0] < scores[1]);
+  assert.ok(scores[1] < scores[2]);
+});
+
 test("ロジックで解けない盤面を未解決として返す", () => {
   const level = {
     size: 4,
