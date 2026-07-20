@@ -7,16 +7,27 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <main class="app">
+  <main id="homeScreen" class="app home-screen">
+    <p class="eyebrow">Meow Logic</p>
+    <h1 class="home-title">Meowdoku</h1>
+    <section class="home-current" aria-label="現在の問題">
+      <p>現在の問題</p>
+      <strong id="homeLevelTitle">レベル 1</strong>
+      <span id="homeDifficultyBadge" class="difficulty-badge" hidden></span>
+    </section>
+    <button id="continueBtn" class="primary-action home-continue" type="button">つづける</button>
+    <p id="homeClearCount">クリア 0問</p>
+  </main>
+
+  <main id="gameScreen" class="app" hidden>
     <header class="topbar">
-      <button id="prevLevelBtn" class="icon-button" type="button" aria-label="前のレベル">←</button>
+      <button id="homeBtn" class="icon-button" type="button" aria-label="ホームへ戻る">⌂</button>
       <div class="title-block">
         <p class="eyebrow">Meow Logic</p>
         <h1 id="levelTitle">レベル 1</h1>
         <span id="difficultyBadge" class="difficulty-badge" hidden></span>
-        <button id="levelPickerBtn" class="level-picker-button" type="button">レベルを選ぶ</button>
       </div>
-      <button id="nextLevelBtn" class="icon-button" type="button" aria-label="次のレベル">→</button>
+      <span class="topbar-spacer" aria-hidden="true"></span>
     </header>
 
     <section class="score-row" aria-label="進行状況">
@@ -60,15 +71,6 @@
       <h2 id="resultTitle">クリア</h2>
       <p id="resultText">すべてのネコを見つけました。</p>
       <button id="closeDialogBtn" type="button">つづける</button>
-    </section>
-  </div>
-
-  <div id="levelDialog" class="dialog" aria-hidden="true">
-    <div class="dialog-backdrop"></div>
-    <section class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="levelDialogTitle">
-      <h2 id="levelDialogTitle">レベルを選ぶ</h2>
-      <div id="levelList" class="level-list"></div>
-      <button id="closeLevelDialogBtn" type="button">閉じる</button>
     </section>
   </div>
 

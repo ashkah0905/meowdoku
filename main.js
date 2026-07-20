@@ -20,19 +20,20 @@ const LEVELS = [
 ].sort((levelA, levelB) => levelNumber(levelA) - levelNumber(levelB));
 
 const boardEl = document.querySelector("#board");
+const homeScreen = document.querySelector("#homeScreen");
+const gameScreen = document.querySelector("#gameScreen");
+const homeLevelTitle = document.querySelector("#homeLevelTitle");
+const homeDifficultyBadge = document.querySelector("#homeDifficultyBadge");
+const homeClearCount = document.querySelector("#homeClearCount");
+const continueBtn = document.querySelector("#continueBtn");
+const homeBtn = document.querySelector("#homeBtn");
 const levelTitle = document.querySelector("#levelTitle");
 const difficultyBadge = document.querySelector("#difficultyBadge");
-const levelPickerBtn = document.querySelector("#levelPickerBtn");
-const levelDialog = document.querySelector("#levelDialog");
-const levelList = document.querySelector("#levelList");
-const closeLevelDialogBtn = document.querySelector("#closeLevelDialogBtn");
 const catCount = document.querySelector("#catCount");
 const clearCount = document.querySelector("#clearCount");
 const lifeHearts = document.querySelector("#lifeHearts");
 const autoCrossToggle = document.querySelector("#autoCrossToggle");
 const statusText = document.querySelector("#statusText");
-const prevLevelBtn = document.querySelector("#prevLevelBtn");
-const nextLevelBtn = document.querySelector("#nextLevelBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const hintBtn = document.querySelector("#hintBtn");
 const autoSolveBtn = document.querySelector("#autoSolveBtn");
@@ -197,7 +198,7 @@ function render() {
   difficultyBadge.dataset.difficulty = level.difficulty;
   catCount.textContent = `${foundCatCount()}/${level.size}`;
   clearCount.textContent = `クリア ${state.completedLevelIds.length}問`;
-  renderLevelList();
+  renderHome();
   lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
   autoCrossToggle.checked = state.autoCross;
   autoSolveBtn.hidden = !canShowAutoSolve();
@@ -257,29 +258,29 @@ function render() {
   saveGame();
 }
 
-function renderLevelList() {
-  levelList.innerHTML = "";
-  LEVELS.forEach((level, levelIndex) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "level-option";
-    button.dataset.levelIndex = String(levelIndex);
+function renderHome() {
+  const level = getLevel();
+  const difficultyLabel = DIFFICULTY_LABELS[level.difficulty];
+  homeLevelTitle.textContent = level.name;
+  homeDifficultyBadge.textContent = difficultyLabel;
+  homeDifficultyBadge.hidden = !difficultyLabel;
+  homeDifficultyBadge.dataset.difficulty = level.difficulty;
+  homeClearCount.textContent = `クリア ${state.completedLevelIds.length}問`;
+}
 
-    const completed = state.completedLevelIds.includes(level.id);
-    const current = state.levelIndex === levelIndex;
-    button.textContent = [
-      level.name,
-      DIFFICULTY_LABELS[level.difficulty],
-      completed ? "✓ クリア" : "未クリア",
-      current ? "プレイ中" : ""
-    ].filter(Boolean).join("・");
+function showHome() {
+  closeDialog();
+  gameScreen.hidden = true;
+  homeScreen.hidden = false;
+  renderHome();
+  continueBtn.focus();
+}
 
-    if (current) {
-      button.classList.add("current");
-      button.setAttribute("aria-current", "true");
-    }
-    levelList.appendChild(button);
-  });
+function showGame() {
+  homeScreen.hidden = true;
+  gameScreen.hidden = false;
+  render();
+  boardEl.querySelector(".cell")?.focus();
 }
 
 function setStatus(message) {
@@ -475,25 +476,9 @@ function resetLevel() {
   render();
 }
 
-function openLevelDialog() {
-  renderLevelList();
-  levelDialog.classList.add("open");
-  levelDialog.setAttribute("aria-hidden", "false");
-  levelList.querySelector(`[data-level-index="${state.levelIndex}"]`)?.focus();
-}
-
-function closeLevelDialog() {
-  levelDialog.classList.remove("open");
-  levelDialog.setAttribute("aria-hidden", "true");
-  levelPickerBtn.focus();
-}
-
 function selectLevel(levelIndex) {
   isAutoSolving = false;
   state = createGame(levelIndex, state.autoCross, state.completedLevelIds);
-  if (levelDialog.classList.contains("open")) {
-    closeLevelDialog();
-  }
   closeDialog();
   setStatus(`${getLevel().name} を開始しました。`);
   render();
@@ -527,18 +512,8 @@ boardEl.addEventListener("click", (event) => {
   cycleMark(Number(cell.dataset.index));
 });
 
-prevLevelBtn.addEventListener("click", () => changeLevel(-1));
-nextLevelBtn.addEventListener("click", () => changeLevel(1));
-levelPickerBtn.addEventListener("click", openLevelDialog);
-closeLevelDialogBtn.addEventListener("click", closeLevelDialog);
-levelDialog.querySelector(".dialog-backdrop").addEventListener("click", closeLevelDialog);
-levelList.addEventListener("click", (event) => {
-  const option = event.target.closest(".level-option");
-  if (!option) {
-    return;
-  }
-  selectLevel(Number(option.dataset.levelIndex));
-});
+continueBtn.addEventListener("click", showGame);
+homeBtn.addEventListener("click", showHome);
 resetBtn.addEventListener("click", resetLevel);
 hintBtn.addEventListener("click", revealHint);
 autoSolveBtn.addEventListener("click", autoSolve);
@@ -561,26 +536,17 @@ closeDialogBtn.addEventListener("click", () => {
 resultDialog.querySelector(".dialog-backdrop").addEventListener("click", closeDialog);
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && levelDialog.classList.contains("open")) {
-    closeLevelDialog();
-    return;
-  }
-
   if (event.key === "Escape" && resultDialog.classList.contains("open")) {
     closeDialog();
     return;
   }
 
-  if (event.key === "ArrowLeft") {
-    changeLevel(-1);
-  } else if (event.key === "ArrowRight") {
-    changeLevel(1);
-  } else if (event.key.toLowerCase() === "r") {
+  if (event.key.toLowerCase() === "r" && !gameScreen.hidden) {
     resetLevel();
-  } else if (event.key.toLowerCase() === "h") {
+  } else if (event.key.toLowerCase() === "h" && !gameScreen.hidden) {
     revealHint();
   }
 });
 
-render();
+showHome();
 prefetchGeneratedLevels(11, 2);
