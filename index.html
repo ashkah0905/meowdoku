@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meowdoku</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <button id="prevLevelBtn" class="icon-button" type="button" aria-label="前のレベル">←</button>
+      <div class="title-block">
+        <p class="eyebrow">Meow Logic</p>
+        <h1 id="levelTitle">レベル 1</h1>
+      </div>
+      <button id="nextLevelBtn" class="icon-button" type="button" aria-label="次のレベル">→</button>
+    </header>
+
+    <section class="score-row" aria-label="進行状況">
+      <div class="pill"><span aria-hidden="true">🐱</span> <strong id="catCount">0/5</strong></div>
+    </section>
+
+    <section class="rules" aria-label="ルール">
+      <button class="rule active" type="button">1色につきネコ1匹</button>
+      <button class="rule" type="button">各列・各行にネコ1匹</button>
+      <button class="rule" type="button">ネコ同士は隣接不可</button>
+    </section>
+
+    <section class="board-wrap" aria-label="パズル盤面">
+      <div id="board" class="board"></div>
+    </section>
+
+    <section class="controls" aria-label="操作">
+      <p id="statusText" class="status" aria-live="polite">マスをタップして、ネコがいそうな場所を探しましょう。</p>
+      <button id="hintBtn" class="primary-action" type="button">ヒント</button>
+      <button id="autoSolveBtn" class="finish-action" type="button" hidden>仕上げる</button>
+      <button id="checkBtn" type="button">チェック</button>
+      <button id="resetBtn" type="button">リセット</button>
+    </section>
+  </main>
+
+  <div id="resultDialog" class="dialog" aria-hidden="true">
+    <div class="dialog-backdrop"></div>
+    <section class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+      <p id="resultCat" class="result-cat" aria-hidden="true">=^._.^=</p>
+      <h2 id="resultTitle">クリア</h2>
+      <p id="resultText">すべてのネコを見つけました。</p>
+      <button id="closeDialogBtn" type="button">つづける</button>
+    </section>
+  </div>
+
+  <script src="./main.js"></script>
+</body>
+</html>
