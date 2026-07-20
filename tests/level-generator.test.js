@@ -97,3 +97,16 @@ test("連結した色エリアを生成する", () => {
 test("条件を満たせない場合はnullを返す", () => {
   assert.equal(generateLevel({ ...options, minScore: 999, maxAttempts: 2 }), null);
 });
+
+test("軸ごとの最低スコアで候補を選別する", () => {
+  const generated = generateLevel(options);
+  assert.ok(generateLevel({
+    ...options,
+    minBoardScore: generated.analysis.metrics.board.score,
+    minLogicScore: generated.analysis.metrics.logic.score,
+    minSearchScore: generated.analysis.metrics.search.score
+  }));
+  assert.equal(generateLevel({ ...options, minBoardScore: 999, maxAttempts: 2 }), null);
+  assert.equal(generateLevel({ ...options, minLogicScore: 999, maxAttempts: 2 }), null);
+  assert.equal(generateLevel({ ...options, minSearchScore: 999, maxAttempts: 2 }), null);
+});

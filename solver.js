@@ -29,6 +29,10 @@ const MEOWDOKU_SOLVER = (() => {
       .filter((index) => index !== null);
   }
 
+  function getLegalCandidateIndexes(level, marks) {
+    return getEmptyIndexes(marks).filter((index) => isLegalCandidate(level, marks, index));
+  }
+
   function isLegalCandidate(level, marks, index, placedCats = getPlacedCats(marks)) {
     if (marks[index] === CROSS) {
       return false;
@@ -349,7 +353,8 @@ const MEOWDOKU_SOLVER = (() => {
     findLogicHint,
     findContradictionHint,
     buildAutoSolvePlan,
-    getConflictingIndexes
+    getConflictingIndexes,
+    getLegalCandidateIndexes
   };
 })();
 

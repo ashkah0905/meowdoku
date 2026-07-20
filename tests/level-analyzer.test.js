@@ -21,6 +21,41 @@ test("解析してもレベルデータを変更しない", () => {
   assert.equal(JSON.stringify(levels[0]), before);
 });
 
+test("総合スコアが3軸の合計になる", () => {
+  const result = analyzeLevel(levels[9]);
+  assert.equal(
+    result.score,
+    result.metrics.board.score + result.metrics.logic.score + result.metrics.search.score
+  );
+});
+
+test("盤面サイズとエリア形状を盤面負荷へ反映する", () => {
+  const small = analyzeLevel(levels[0]);
+  const large = analyzeLevel(levels[6]);
+  assert.ok(large.metrics.board.score > small.metrics.board.score);
+
+  const checkerboard = {
+    ...levels[0],
+    regions: Array.from({ length: 5 }, (_, row) =>
+      Array.from({ length: 5 }, (_, column) => (row + column) % 5)
+    )
+  };
+  assert.ok(
+    analyzeLevel(checkerboard).metrics.board.irregularity > small.metrics.board.irregularity
+  );
+});
+
+test("難しい必須解法と候補数を各軸へ反映する", () => {
+  const introductory = analyzeLevel(levels[6]);
+  const advanced = analyzeLevel(levels[8]);
+  assert.equal(introductory.metrics.logic.hardestTechnique, "region-line");
+  assert.equal(advanced.metrics.logic.hardestTechnique, "contradiction");
+  assert.ok(
+    advanced.metrics.search.averageCandidateCount >
+    introductory.metrics.search.averageCandidateCount
+  );
+});
+
 test("使用した解法を集計する", () => {
   const result = analyzeLevel(levels[6]);
   assert.equal(result.solved, true);

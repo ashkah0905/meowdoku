@@ -7,7 +7,8 @@ const {
   findLogicHint,
   findContradictionHint,
   buildAutoSolvePlan,
-  getConflictingIndexes
+  getConflictingIndexes,
+  getLegalCandidateIndexes
 } = require("../solver.js");
 
 const level = levels[0];
@@ -75,6 +76,13 @@ test("競合するマスを重複なく返す", () => {
   assert.ok(conflicts.includes(0));
   assert.ok(conflicts.includes(6));
   assert.ok(!conflicts.includes(1));
+});
+
+test("現在ネコを置ける候補マスを返す", () => {
+  const marks = emptyMarks();
+  assert.equal(getLegalCandidateIndexes(level, marks).length, level.size ** 2);
+  marks[1] = "cat";
+  assert.ok(getLegalCandidateIndexes(level, marks).length < level.size ** 2 - 1);
 });
 
 test("6x6でも配置済みのネコからヒントを作れる", () => {

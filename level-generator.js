@@ -93,6 +93,9 @@ const MEOWDOKU_LEVEL_GENERATOR = (() => {
       seed,
       minScore = 0,
       maxScore = Number.POSITIVE_INFINITY,
+      minBoardScore = 0,
+      minLogicScore = 0,
+      minSearchScore = 0,
       maxAttempts = 1000
     } = options;
     const random = createSeededRandom(seed);
@@ -115,7 +118,14 @@ const MEOWDOKU_LEVEL_GENERATOR = (() => {
         continue;
       }
       const analysis = analyzeLevel(level);
-      if (analysis.solved && analysis.score >= minScore && analysis.score <= maxScore) {
+      if (
+        analysis.solved &&
+        analysis.score >= minScore &&
+        analysis.score <= maxScore &&
+        analysis.metrics.board.score >= minBoardScore &&
+        analysis.metrics.logic.score >= minLogicScore &&
+        analysis.metrics.search.score >= minSearchScore
+      ) {
         return { level, analysis };
       }
     }
