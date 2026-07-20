@@ -14,6 +14,8 @@ const LEVELS = globalThis.MEOWDOKU_LEVELS;
 const boardEl = document.querySelector("#board");
 const levelTitle = document.querySelector("#levelTitle");
 const catCount = document.querySelector("#catCount");
+const lifeHearts = document.querySelector("#lifeHearts");
+const autoCrossToggle = document.querySelector("#autoCrossToggle");
 const statusText = document.querySelector("#statusText");
 const prevLevelBtn = document.querySelector("#prevLevelBtn");
 const nextLevelBtn = document.querySelector("#nextLevelBtn");
@@ -30,11 +32,12 @@ let state = loadGame() || createGame(0);
 let dialogMode = null;
 let isAutoSolving = false;
 
-function createGame(levelIndex) {
+function createGame(levelIndex, autoCross = true) {
   return {
     levelIndex,
     marks: Array(CELL_COUNT).fill(EMPTY),
     lives: MAX_LIVES,
+    autoCross,
     completed: false,
     selected: null,
     hint: null
@@ -50,7 +53,11 @@ function loadGame() {
     if (typeof saved.levelIndex !== "number" || !LEVELS[saved.levelIndex]) {
       return null;
     }
-    return saved;
+    return {
+      ...saved,
+      lives: Number.isInteger(saved.lives) ? saved.lives : MAX_LIVES,
+      autoCross: typeof saved.autoCross === "boolean" ? saved.autoCross : true
+    };
   } catch {
     return null;
   }
@@ -88,7 +95,9 @@ function foundCatCount() {
 function render() {
   const level = getLevel();
   levelTitle.textContent = level.name;
-  catCount.textContent = `${getPlacedCats().length}/${SIZE}`;
+  catCount.textContent = `${foundCatCount()}/${SIZE}`;
+  lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
+  autoCrossToggle.checked = state.autoCross;
   autoSolveBtn.hidden = !canShowAutoSolve();
   autoSolveBtn.disabled = isAutoSolving;
 
@@ -112,6 +121,9 @@ function render() {
     }
     if (state.hint?.targets?.includes(index)) {
       cell.classList.add("hint-target");
+    }
+    if (state.marks[index] === CAT && isCorrectCat(index)) {
+      cell.classList.add("revealed");
     }
     const mark = document.createElement("span");
     mark.className = "mark";
@@ -137,7 +149,7 @@ function setStatus(message) {
 }
 
 function cycleMark(index) {
-  if (isAutoSolving || state.completed) {
+  if (isAutoSolving || state.completed || state.lives <= 0) {
     return;
   }
 
@@ -149,7 +161,7 @@ function cycleMark(index) {
     setStatus("ここにはいなさそう、という印をつけました。");
   } else if (current === CROSS) {
     state.marks[index] = CAT;
-    setStatus("ネコの候補を置きました。チェックではルール違反だけを確認できます。");
+    handleCatPlaced(index);
   } else if (current === CAT || current === WRONG) {
     state.marks[index] = EMPTY;
     setStatus("マスを空に戻しました。");
@@ -157,6 +169,25 @@ function cycleMark(index) {
 
   checkComplete();
   render();
+}
+
+function handleCatPlaced(index) {
+  if (isCorrectCat(index)) {
+    if (state.autoCross) {
+      markObviousCrosses(index);
+      setStatus("ネコを見つけました。関連するマスへ自動で×を入れました。");
+    } else {
+      setStatus("ネコを見つけました。");
+    }
+    return;
+  }
+
+  state.marks[index] = WRONG;
+  state.lives = Math.max(0, state.lives - 1);
+  setStatus("そこにはネコはいません。ライフが1つ減りました。");
+  if (state.lives === 0) {
+    openDialog("ゲームオーバー", "ライフがなくなりました。リセットして再挑戦できます。");
+  }
 }
 
 function markObviousCrosses(index) {
@@ -216,7 +247,7 @@ function findRuleIssues(placedCats) {
 }
 
 function revealHint() {
-  if (state.completed) {
+  if (state.completed || state.lives <= 0) {
     return;
   }
 
@@ -501,7 +532,9 @@ function autoSolve() {
 
   for (const index of plan) {
     state.marks[index] = CAT;
-    markObviousCrosses(index);
+    if (state.autoCross) {
+      markObviousCrosses(index);
+    }
   }
   state.hint = { primary: plan, targets: [], message: "残りのネコをロジックで仕上げました。" };
   isAutoSolving = true;
@@ -605,7 +638,7 @@ function closeDialog() {
 
 function resetLevel() {
   isAutoSolving = false;
-  state = createGame(state.levelIndex);
+  state = createGame(state.levelIndex, state.autoCross);
   closeDialog();
   setStatus("このレベルを最初からやり直します。");
   render();
@@ -614,7 +647,7 @@ function resetLevel() {
 function changeLevel(step) {
   isAutoSolving = false;
   const nextIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
-  state = createGame(nextIndex);
+  state = createGame(nextIndex, state.autoCross);
   closeDialog();
   setStatus(`${getLevel().name} を開始しました。`);
   render();
@@ -634,6 +667,15 @@ resetBtn.addEventListener("click", resetLevel);
 hintBtn.addEventListener("click", revealHint);
 autoSolveBtn.addEventListener("click", autoSolve);
 checkBtn.addEventListener("click", checkBoard);
+autoCrossToggle.addEventListener("change", () => {
+  state.autoCross = autoCrossToggle.checked;
+  setStatus(
+    state.autoCross
+      ? "ネコ発見時の自動×をオンにしました。"
+      : "ネコ発見時の自動×をオフにしました。"
+  );
+  render();
+});
 closeDialogBtn.addEventListener("click", () => {
   if (dialogMode === "clear") {
     changeLevel(1);

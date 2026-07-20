@@ -156,6 +156,27 @@ h1 {
   color: var(--accent);
 }
 
+.settings {
+  display: flex;
+  justify-content: center;
+}
+
+.setting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.setting input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
 .board-wrap {
   display: grid;
   place-items: center;
