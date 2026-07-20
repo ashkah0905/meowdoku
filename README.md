@@ -35,7 +35,17 @@
 
 - `index.html`: 画面構造
 - `styles.css`: 見た目とレスポンシブ対応
-- `main.js`: レベル定義、入力、判定、保存、描画
+- `levels.js`: レベル定義
+- `main.js`: 入力、判定、保存、描画
+- `tests/levels.test.js`: 問題データと一意解の検証
+
+## テスト
+
+Node.jsが利用できる環境で実行します。
+
+```sh
+npm test
+```
 
 ## 今は入れていないもの
 
