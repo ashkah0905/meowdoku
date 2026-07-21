@@ -60,6 +60,8 @@ let dialogReturnFocus = null;
 let crossDrag = null;
 let suppressNextClick = false;
 let toastTimer = null;
+let celebrationIndex = null;
+let celebrationTimer = null;
 const LONG_PRESS_DELAY = 500;
 const MOVE_TOLERANCE = 8;
 let generationWorker = null;
@@ -267,6 +269,9 @@ function render() {
     if (state.marks[index] === CAT && isCorrectCat(index)) {
       cell.classList.add("revealed");
     }
+    if (celebrationIndex === index) {
+      cell.classList.add("celebrating");
+    }
     const mark = document.createElement("span");
     mark.className = "mark";
     if (state.marks[index] === CROSS) {
@@ -378,12 +383,25 @@ function placeCat(index) {
     render();
     return;
   }
+  const placedCorrectly = isCorrectCat(index);
   state.memoMarks[index] = EMPTY;
   state.marks[index] = CAT;
   handleCatPlaced(index);
+  if (placedCorrectly) {
+    celebrateCorrectCat(index);
+  }
   checkComplete();
   navigator.vibrate?.(30);
   render();
+}
+
+function celebrateCorrectCat(index) {
+  window.clearTimeout(celebrationTimer);
+  celebrationIndex = index;
+  celebrationTimer = window.setTimeout(() => {
+    boardEl.querySelector(`[data-index="${index}"]`)?.classList.remove("celebrating");
+    celebrationIndex = null;
+  }, 550);
 }
 
 function markCrossDuringDrag(cell) {

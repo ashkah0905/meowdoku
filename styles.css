@@ -341,6 +341,7 @@ h1 {
   font-weight: 900;
   line-height: 1;
   pointer-events: none;
+  z-index: 2;
 }
 
 .cross-mark {
@@ -354,6 +355,60 @@ h1 {
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 14px rgba(255, 246, 92, 0.9);
+}
+
+.cell.celebrating {
+  z-index: 1;
+  overflow: visible;
+}
+
+.cell.celebrating .cat-mark {
+  animation: cat-squish-pop 520ms cubic-bezier(0.22, 1.35, 0.36, 1);
+}
+
+.cell.celebrating::after {
+  content: "✦";
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  color: #fff4a8;
+  font-size: 0.55rem;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow:
+    -16px -10px 0 #fff7cf,
+    15px -12px 0 #ffd166,
+    -18px 8px 0 #ffb4c2,
+    17px 10px 0 #ffffff,
+    0 18px 0 #ffe98a;
+  animation: cat-sparkle-burst 520ms ease-out forwards;
+}
+
+@keyframes cat-squish-pop {
+  0% { transform: scale(0.72, 1.12); }
+  38% { transform: scale(1.24, 0.86); }
+  68% { transform: scale(0.94, 1.06); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cat-sparkle-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.25) rotate(-18deg);
+  }
+  32% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.25) rotate(12deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell.celebrating .cat-mark,
+  .cell.celebrating::after {
+    animation: none;
+  }
 }
 
 .memo-mark {
