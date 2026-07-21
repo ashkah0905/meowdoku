@@ -34,6 +34,7 @@ const clearCount = document.querySelector("#clearCount");
 const lifeHearts = document.querySelector("#lifeHearts");
 const autoCrossToggle = document.querySelector("#autoCrossToggle");
 const statusText = document.querySelector("#statusText");
+const toast = document.querySelector("#toast");
 const resetBtn = document.querySelector("#resetBtn");
 const hintBtn = document.querySelector("#hintBtn");
 const memoBtn = document.querySelector("#memoBtn");
@@ -56,6 +57,7 @@ let isAutoSolving = false;
 let dialogReturnFocus = null;
 let crossDrag = null;
 let suppressNextClick = false;
+let toastTimer = null;
 const LONG_PRESS_DELAY = 500;
 const MOVE_TOLERANCE = 8;
 let generationWorker = null;
@@ -303,8 +305,17 @@ function showGame() {
   boardEl.querySelector(".cell")?.focus();
 }
 
-function setStatus(message) {
+function setStatus(message, visible = false) {
   statusText.textContent = message;
+  if (!visible) {
+    return;
+  }
+  window.clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.hidden = false;
+  toastTimer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 2600);
 }
 
 function toggleCross(index) {
@@ -316,7 +327,7 @@ function toggleCross(index) {
   state.hint = null;
   if (state.memoMode) {
     if (state.marks[index] !== EMPTY) {
-      setStatus("確定済みのマスにはメモできません。");
+      setStatus("確定済みのマスにはメモできません。", true);
     } else {
       state.memoMarks[index] = state.memoMarks[index] === CROSS ? EMPTY : CROSS;
       setStatus(state.memoMarks[index] === CROSS ? "メモの×をつけました。" : "メモを消しました。");
@@ -346,7 +357,7 @@ function placeCat(index) {
   state.hint = null;
   if (state.memoMode) {
     if (state.marks[index] !== EMPTY) {
-      setStatus("確定済みのマスにはメモできません。");
+      setStatus("確定済みのマスにはメモできません。", true);
     } else {
       state.memoMarks[index] = state.memoMarks[index] === CAT ? EMPTY : CAT;
       setStatus(state.memoMarks[index] === CAT ? "メモのネコを置きました。" : "メモを消しました。");
@@ -455,7 +466,7 @@ function revealHint() {
 
   const hint = findLogicHint();
   if (!hint) {
-    setStatus("今の盤面では、すぐ説明できるヒントが見つかりませんでした。チェックや仮置きを試してみましょう。");
+    setStatus("今の盤面では、すぐ説明できるヒントが見つかりませんでした。チェックや仮置きを試してみましょう。", true);
     state.hint = null;
     render();
     return;
@@ -463,7 +474,7 @@ function revealHint() {
 
   state.hint = hint;
   state.selected = hint.primary[0] ?? hint.targets[0] ?? null;
-  setStatus(hint.message);
+  setStatus(hint.message, true);
   render();
 }
 
@@ -495,7 +506,7 @@ function autoSolve() {
 
   const plan = buildAutoSolvePlan();
   if (!plan) {
-    setStatus("まだロジックだけでは仕上げられません。もう少し絞り込みましょう。");
+    setStatus("まだロジックだけでは仕上げられません。もう少し絞り込みましょう。", true);
     render();
     return;
   }
@@ -508,7 +519,7 @@ function autoSolve() {
   }
   state.hint = { primary: plan, targets: [], message: "残りのネコをロジックで仕上げました。" };
   isAutoSolving = true;
-  setStatus("残りのネコをロジックで仕上げました。");
+  setStatus("残りのネコをロジックで仕上げました。", true);
   render();
   window.setTimeout(() => {
     isAutoSolving = false;
@@ -581,7 +592,7 @@ function toggleMemoMode() {
   state.memoMode = !state.memoMode;
   setStatus(state.memoMode
     ? "メモモードです。タップで小さい×、長押しで小さいネコを置けます。"
-    : "メモモードを終了しました。");
+    : "メモモードを終了しました。", true);
   render();
 }
 
@@ -605,12 +616,12 @@ function selectLevel(levelIndex) {
 
 async function changeLevel(step) {
   if (step > 0 && state.levelIndex === LEVELS.length - 1) {
-    setStatus("次の問題を準備しています…");
+    setStatus("次の問題を準備しています…", true);
     render();
     const nextLevel = await ensureGeneratedLevel(levelNumber(getLevel()) + 1);
     if (!nextLevel) {
       closeDialog();
-      setStatus("問題を準備できませんでした。ページを再読み込みしてお試しください。");
+      setStatus("問題を準備できませんでした。ページを再読み込みしてお試しください。", true);
       render();
       return;
     }

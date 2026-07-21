@@ -56,13 +56,14 @@
     </section>
 
     <section class="controls" aria-label="操作">
-      <p id="statusText" class="status" aria-live="polite">タップで×、長押しでネコを置けます。</p>
+      <p id="statusText" class="visually-hidden" aria-live="polite"></p>
       <button id="hintBtn" class="primary-action" type="button">ヒント</button>
       <button id="memoBtn" type="button" aria-pressed="false">メモ</button>
       <button id="autoSolveBtn" class="finish-action" type="button" hidden>仕上げる</button>
       <button id="resetBtn" type="button">リセット</button>
       <button id="resetMemoBtn" class="memo-reset" type="button" hidden>メモをリセット</button>
     </section>
+    <p id="toast" class="toast" aria-hidden="true" hidden></p>
   </main>
 
   <div id="resultDialog" class="dialog" aria-hidden="true">
