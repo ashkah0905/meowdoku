@@ -13,7 +13,7 @@ const MEOWDOKU_GENERATED_LEVEL_STORE = (() => {
     if (
       typeof id !== "string" || !/^stage-\d{3,}$/.test(id) ||
       typeof name !== "string" ||
-      !Number.isInteger(size) || size < 5 || size > 7 ||
+      !Number.isInteger(size) || size < 5 || size > 8 ||
       !DIFFICULTIES.has(difficulty) ||
       !Array.isArray(regions) || regions.length !== size ||
       !Array.isArray(cats) || cats.length !== size

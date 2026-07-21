@@ -16,19 +16,27 @@ const MEOWDOKU_PROGRESSION = (() => {
   ];
 
   function getBoardSize(levelNumber) {
-    return levelNumber <= 30 ? 6 : 7;
+    if (levelNumber <= 30) {
+      return 6;
+    }
+    if (levelNumber <= 50) {
+      return 7;
+    }
+    return 8;
   }
 
   function getGenerationOptions(levelNumber) {
     const profile = CYCLE[(levelNumber - 1) % CYCLE.length];
+    const size = getBoardSize(levelNumber);
+    const sizeScoreOffset = (size - 6) * 2;
     return {
       id: `stage-${String(levelNumber).padStart(3, "0")}`,
       name: `レベル ${levelNumber}`,
-      size: getBoardSize(levelNumber),
+      size,
       difficulty: profile.difficulty,
       seed: `meowdoku-v${GENERATOR_VERSION}:${levelNumber}`,
-      minScore: profile.minScore,
-      maxScore: profile.maxScore,
+      minScore: profile.minScore + sizeScoreOffset,
+      maxScore: profile.maxScore + sizeScoreOffset,
       maxAttempts: 10000
     };
   }

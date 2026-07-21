@@ -68,7 +68,7 @@ const generationRequests = new Map();
 const pendingGeneration = new Map();
 
 try {
-  generationWorker = new Worker("./level-worker.js");
+  generationWorker = new Worker("./level-worker.js?v=2");
   generationWorker.addEventListener("message", (event) => {
     const { requestId, level } = event.data;
     const request = generationRequests.get(requestId);
@@ -228,6 +228,7 @@ function render() {
 
   boardEl.innerHTML = "";
   boardEl.style.setProperty("--board-size", String(level.size));
+  boardEl.dataset.size = String(level.size);
   for (let index = 0; index < getCellCount(); index += 1) {
     const [row, col] = toRowCol(index, level.size);
     const region = level.regions[row][col];

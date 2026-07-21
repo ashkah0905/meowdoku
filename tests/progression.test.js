@@ -17,9 +17,12 @@ test("5面ごとの特別ステージを設定する", () => {
   assert.equal(getGenerationOptions(21).difficulty, "normal");
 });
 
-test("30面目までは6x6で31面目から7x7になる", () => {
+test("進行に合わせて盤面が6x6から8x8まで広がる", () => {
   assert.equal(getGenerationOptions(30).size, 6);
   assert.equal(getGenerationOptions(31).size, 7);
+  assert.equal(getGenerationOptions(50).size, 7);
+  assert.equal(getGenerationOptions(51).size, 8);
+  assert.equal(getGenerationOptions(71).size, 8);
 });
 
 test("同じ面番号から同じIDとseedを作る", () => {

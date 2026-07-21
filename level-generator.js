@@ -19,27 +19,42 @@ const MEOWDOKU_LEVEL_GENERATOR = (() => {
     };
   }
 
-  function permutations(values) {
-    if (values.length < 2) {
-      return [values];
+  function shuffledColumns(size, random) {
+    const columns = Array.from({ length: size }, (_, index) => index);
+    for (let index = columns.length - 1; index > 0; index -= 1) {
+      const target = Math.floor(random() * (index + 1));
+      [columns[index], columns[target]] = [columns[target], columns[index]];
     }
-    return values.flatMap((value, index) => {
-      const remaining = [...values.slice(0, index), ...values.slice(index + 1)];
-      return permutations(remaining).map((permutation) => [value, ...permutation]);
-    });
-  }
-
-  function validCatColumns(size) {
-    return permutations(Array.from({ length: size }, (_, index) => index)).filter(
-      (columns) => columns.every(
-        (column, row) => row === 0 || Math.abs(column - columns[row - 1]) > 1
-      )
-    );
+    return columns;
   }
 
   function generateCatColumns(size, random) {
-    const candidates = validCatColumns(size);
-    return candidates[Math.floor(random() * candidates.length)] ?? null;
+    const columns = Array(size).fill(-1);
+    const usedColumns = new Set();
+
+    function placeRow(row) {
+      if (row === size) {
+        return true;
+      }
+      for (const column of shuffledColumns(size, random)) {
+        if (
+          usedColumns.has(column) ||
+          (row > 0 && Math.abs(column - columns[row - 1]) <= 1)
+        ) {
+          continue;
+        }
+        columns[row] = column;
+        usedColumns.add(column);
+        if (placeRow(row + 1)) {
+          return true;
+        }
+        usedColumns.delete(column);
+      }
+      columns[row] = -1;
+      return false;
+    }
+
+    return placeRow(0) ? columns : null;
   }
 
   function growConnectedRegions(size, cats, random) {
@@ -77,11 +92,41 @@ const MEOWDOKU_LEVEL_GENERATOR = (() => {
       );
   }
 
-  function countSolutions(level) {
-    return validCatColumns(level.size).filter((columns) => {
-      const regions = columns.map((column, row) => level.regions[row][column]);
-      return new Set(regions).size === level.size;
-    }).length;
+  function countSolutions(level, limit = Number.POSITIVE_INFINITY) {
+    const usedColumns = new Set();
+    const usedRegions = new Set();
+    let solutionCount = 0;
+
+    function search(row, previousColumn) {
+      if (solutionCount >= limit) {
+        return;
+      }
+      if (row === level.size) {
+        solutionCount += 1;
+        return;
+      }
+      for (let column = 0; column < level.size; column += 1) {
+        const region = level.regions[row][column];
+        if (
+          usedColumns.has(column) ||
+          usedRegions.has(region) ||
+          (row > 0 && Math.abs(column - previousColumn) <= 1)
+        ) {
+          continue;
+        }
+        usedColumns.add(column);
+        usedRegions.add(region);
+        search(row + 1, column);
+        usedColumns.delete(column);
+        usedRegions.delete(region);
+        if (solutionCount >= limit) {
+          return;
+        }
+      }
+    }
+
+    search(0, -1);
+    return solutionCount;
   }
 
   function generateLevel(options) {
@@ -114,7 +159,7 @@ const MEOWDOKU_LEVEL_GENERATOR = (() => {
         regions: growConnectedRegions(size, cats, random),
         cats
       };
-      if (countSolutions(level) !== 1) {
+      if (countSolutions(level, 2) !== 1) {
         continue;
       }
       const analysis = analyzeLevel(level);

@@ -4,8 +4,8 @@ importScripts(
   "./rules.js",
   "./solver.js",
   "./level-analyzer.js",
-  "./level-generator.js",
-  "./progression.js"
+  "./level-generator.js?v=2",
+  "./progression.js?v=2"
 );
 
 self.addEventListener("message", (event) => {

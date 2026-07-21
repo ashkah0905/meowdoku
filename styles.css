@@ -305,6 +305,27 @@ h1 {
 .cell.color-4 { background: #aaa7d7; }
 .cell.color-5 { background: #73bea0; }
 .cell.color-6 { background: #e58b63; }
+.cell.color-7 { background: #5fa6a8; }
+
+.board[data-size="8"] {
+  --cell-gap: 3px;
+}
+
+.board[data-size="8"] .mark {
+  font-size: 1.35rem;
+}
+
+.board[data-size="8"] .cross-mark {
+  font-size: 1.55rem;
+}
+
+.board[data-size="8"] .cat-mark {
+  font-size: 1.25rem;
+}
+
+.board[data-size="8"] .memo-mark {
+  font-size: 0.9rem;
+}
 
 .mark {
   position: absolute;

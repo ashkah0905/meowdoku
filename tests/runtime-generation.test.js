@@ -51,3 +51,17 @@ test("フォールバック生成でも同じ固定問題を保存できる", ()
   assert.equal(saveGeneratedLevel(storage, fallbackResult.level), true);
   assert.deepEqual(findGeneratedLevel(storage, options.id), workerResult.level);
 });
+
+test("8x8問題を一意解で生成して保存できる", () => {
+  const options = getGenerationOptions(51);
+  const result = generateLevel(options);
+  assert.ok(result);
+  assert.equal(result.level.size, 8);
+  assert.equal(result.level.cats.length, 8);
+  assert.equal(new Set(result.level.regions.flat()).size, 8);
+  assert.equal(countSolutions(result.level, 2), 1);
+
+  const storage = createStorage();
+  assert.equal(saveGeneratedLevel(storage, result.level), true);
+  assert.deepEqual(findGeneratedLevel(storage, result.level.id), result.level);
+});
