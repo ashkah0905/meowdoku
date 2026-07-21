@@ -7,7 +7,8 @@ const {
   createGame,
   normalizeGame,
   loadGame,
-  saveGame
+  saveGame,
+  findResumeLevelIndex
 } = require("../game-state.js");
 
 const options = {
@@ -136,4 +137,17 @@ test("6x6レベルの36マスを復元できる", () => {
   const game = createGame(0, { size: largeLevel.size, maxLives: 3 });
   assert.equal(game.marks.length, 36);
   assert.deepEqual(normalizeGame(game, largeOptions), game);
+});
+
+test("空のクリア済み問題から最初の未クリア問題を再開する", () => {
+  const game = validGame();
+  game.completedLevelIds = ["stage-001", "stage-002", "stage-003"];
+  assert.equal(findResumeLevelIndex(game, levels), 3);
+});
+
+test("プレイ途中の問題は再開位置を変えない", () => {
+  const game = validGame();
+  game.completedLevelIds = ["stage-001", "stage-002", "stage-003"];
+  game.marks[0] = "cross";
+  assert.equal(findResumeLevelIndex(game, levels), 0);
 });

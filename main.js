@@ -51,9 +51,11 @@ const DIFFICULTY_LABELS = {
   "super-hard": "SUPER HARD"
 };
 
-let state = loadGame() || createGame(0);
+const loadedState = loadGame();
+let state = loadedState ? resumeGame(loadedState) : createGame(0);
 let dialogMode = null;
 let isAutoSolving = false;
+let isChangingLevel = false;
 let dialogReturnFocus = null;
 let crossDrag = null;
 let suppressNextClick = false;
@@ -168,6 +170,15 @@ function loadGame() {
 
 function saveGame() {
   globalThis.MEOWDOKU_GAME_STATE.saveGame(localStorage, SAVE_KEY, state);
+}
+
+function resumeGame(savedState) {
+  const resumeIndex = globalThis.MEOWDOKU_GAME_STATE
+    .findResumeLevelIndex(savedState, LEVELS);
+  if (resumeIndex === savedState.levelIndex) {
+    return savedState;
+  }
+  return createGame(resumeIndex, savedState.autoCross, savedState.completedLevelIds);
 }
 
 function getLevel() {
@@ -615,19 +626,36 @@ function selectLevel(levelIndex) {
 }
 
 async function changeLevel(step) {
-  if (step > 0 && state.levelIndex === LEVELS.length - 1) {
-    setStatus("次の問題を準備しています…", true);
-    render();
-    const nextLevel = await ensureGeneratedLevel(levelNumber(getLevel()) + 1);
-    if (!nextLevel) {
-      closeDialog();
-      setStatus("問題を準備できませんでした。ページを再読み込みしてお試しください。", true);
+  if (isChangingLevel) {
+    return;
+  }
+
+  isChangingLevel = true;
+  closeDialogBtn.disabled = true;
+  const currentLevelNumber = levelNumber(getLevel());
+  try {
+    if (step > 0) {
+      const targetLevelNumber = currentLevelNumber + step;
+      setStatus("次の問題を準備しています…", true);
       render();
+      const nextLevel = await ensureGeneratedLevel(targetLevelNumber);
+      if (!nextLevel) {
+        closeDialog();
+        setStatus("問題を準備できませんでした。ページを再読み込みしてお試しください。", true);
+        render();
+        return;
+      }
+      const nextIndex = LEVELS.findIndex((level) => level.id === nextLevel.id);
+      selectLevel(nextIndex);
       return;
     }
+
+    const nextIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
+    selectLevel(nextIndex);
+  } finally {
+    isChangingLevel = false;
+    closeDialogBtn.disabled = false;
   }
-  const nextIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
-  selectLevel(nextIndex);
 }
 
 boardEl.addEventListener("click", (event) => {

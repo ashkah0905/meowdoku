@@ -106,7 +106,24 @@ const MEOWDOKU_GAME_STATE = (() => {
     storage.setItem(key, JSON.stringify(state));
   }
 
-  return { createGame, normalizeGame, loadGame, saveGame };
+  function findResumeLevelIndex(state, levels) {
+    const currentLevel = levels[state.levelIndex];
+    const isEmpty = state.marks.every((mark) => mark === "empty");
+    if (
+      !currentLevel ||
+      !isEmpty ||
+      !state.completedLevelIds.includes(currentLevel.id)
+    ) {
+      return state.levelIndex;
+    }
+
+    const firstIncomplete = levels.findIndex(
+      (level) => !state.completedLevelIds.includes(level.id)
+    );
+    return firstIncomplete === -1 ? state.levelIndex : firstIncomplete;
+  }
+
+  return { createGame, normalizeGame, loadGame, saveGame, findResumeLevelIndex };
 })();
 
 if (typeof module !== "undefined" && module.exports) {
