@@ -36,6 +36,8 @@ const autoCrossToggle = document.querySelector("#autoCrossToggle");
 const statusText = document.querySelector("#statusText");
 const resetBtn = document.querySelector("#resetBtn");
 const hintBtn = document.querySelector("#hintBtn");
+const memoBtn = document.querySelector("#memoBtn");
+const resetMemoBtn = document.querySelector("#resetMemoBtn");
 const autoSolveBtn = document.querySelector("#autoSolveBtn");
 const resultDialog = document.querySelector("#resultDialog");
 const resultTitle = document.querySelector("#resultTitle");
@@ -205,6 +207,9 @@ function render() {
   renderHome();
   lifeHearts.textContent = "❤".repeat(state.lives) + "♡".repeat(MAX_LIVES - state.lives);
   autoCrossToggle.checked = state.autoCross;
+  memoBtn.classList.toggle("memo-active", state.memoMode);
+  memoBtn.setAttribute("aria-pressed", String(state.memoMode));
+  resetMemoBtn.hidden = !state.memoMode;
   autoSolveBtn.hidden = !canShowAutoSolve();
   autoSolveBtn.disabled = isAutoSolving;
 
@@ -223,9 +228,14 @@ function render() {
       [CAT]: "ネコ",
       [WRONG]: "ミス"
     };
+    const memoLabel = state.memoMarks[index] === CAT
+      ? "、メモのネコ"
+      : state.memoMarks[index] === CROSS
+        ? "、メモのネコなし"
+        : "";
     cell.setAttribute(
       "aria-label",
-      `${row + 1}行 ${col + 1}列、エリア${region + 1}、${markLabels[state.marks[index]]}`
+      `${row + 1}行 ${col + 1}列、エリア${region + 1}、${markLabels[state.marks[index]]}${memoLabel}`
     );
 
     if (state.selected === index) {
@@ -253,6 +263,12 @@ function render() {
       mark.textContent = "×";
     } else if (state.marks[index] === CAT) {
       mark.classList.add("cat-mark");
+      mark.textContent = "🐱";
+    } else if (state.memoMarks[index] === CROSS) {
+      mark.classList.add("cross-mark", "memo-mark");
+      mark.textContent = "×";
+    } else if (state.memoMarks[index] === CAT) {
+      mark.classList.add("cat-mark", "memo-mark");
       mark.textContent = "🐱";
     }
     cell.appendChild(mark);
@@ -298,7 +314,18 @@ function toggleCross(index) {
 
   state.selected = index;
   state.hint = null;
+  if (state.memoMode) {
+    if (state.marks[index] !== EMPTY) {
+      setStatus("確定済みのマスにはメモできません。");
+    } else {
+      state.memoMarks[index] = state.memoMarks[index] === CROSS ? EMPTY : CROSS;
+      setStatus(state.memoMarks[index] === CROSS ? "メモの×をつけました。" : "メモを消しました。");
+    }
+    render();
+    return;
+  }
   const current = state.marks[index];
+  state.memoMarks[index] = EMPTY;
   if (current === EMPTY) {
     state.marks[index] = CROSS;
     setStatus("ネコがいない印をつけました。");
@@ -317,6 +344,18 @@ function toggleCross(index) {
 function placeCat(index) {
   state.selected = index;
   state.hint = null;
+  if (state.memoMode) {
+    if (state.marks[index] !== EMPTY) {
+      setStatus("確定済みのマスにはメモできません。");
+    } else {
+      state.memoMarks[index] = state.memoMarks[index] === CAT ? EMPTY : CAT;
+      setStatus(state.memoMarks[index] === CAT ? "メモのネコを置きました。" : "メモを消しました。");
+    }
+    navigator.vibrate?.(20);
+    render();
+    return;
+  }
+  state.memoMarks[index] = EMPTY;
   state.marks[index] = CAT;
   handleCatPlaced(index);
   checkComplete();
@@ -326,19 +365,24 @@ function placeCat(index) {
 
 function markCrossDuringDrag(cell) {
   const index = Number(cell.dataset.index);
+  const marks = state.memoMode ? state.memoMarks : state.marks;
   if (
     crossDrag.touched.has(index) ||
-    state.marks[index] !== EMPTY
+    marks[index] !== EMPTY ||
+    (state.memoMode && state.marks[index] !== EMPTY)
   ) {
     return;
   }
 
   crossDrag.touched.add(index);
-  state.marks[index] = CROSS;
+  marks[index] = CROSS;
+  if (!state.memoMode) {
+    state.memoMarks[index] = EMPTY;
+  }
   state.selected = index;
   state.hint = null;
   const mark = cell.querySelector(".mark");
-  mark.className = "mark cross-mark";
+  mark.className = `mark cross-mark${state.memoMode ? " memo-mark" : ""}`;
   mark.textContent = "×";
 }
 
@@ -399,6 +443,7 @@ function markObviousCrosses(index) {
 
     if (sameRow || sameCol || sameRegion || adjacent) {
       state.marks[target] = CROSS;
+      state.memoMarks[target] = EMPTY;
     }
   }
 }
@@ -529,6 +574,23 @@ function resetLevel() {
   render();
 }
 
+function toggleMemoMode() {
+  if (state.completed || state.lives <= 0 || isAutoSolving) {
+    return;
+  }
+  state.memoMode = !state.memoMode;
+  setStatus(state.memoMode
+    ? "メモモードです。タップで小さい×、長押しで小さいネコを置けます。"
+    : "メモモードを終了しました。");
+  render();
+}
+
+function resetMemo() {
+  state.memoMarks.fill(EMPTY);
+  setStatus("メモをすべて消しました。");
+  render();
+}
+
 function selectLevel(levelIndex) {
   isAutoSolving = false;
   state = createGame(levelIndex, state.autoCross, state.completedLevelIds);
@@ -587,7 +649,7 @@ boardEl.addEventListener("pointerdown", (event) => {
     pointerId: event.pointerId,
     startCell: cell,
     startIndex: index,
-    startMark: state.marks[index],
+    startMark: state.memoMode ? state.memoMarks[index] : state.marks[index],
     startX: event.clientX,
     startY: event.clientY,
     touched: new Set(),
@@ -597,7 +659,8 @@ boardEl.addEventListener("pointerdown", (event) => {
     longPressTimer: null,
   };
 
-  if (state.marks[index] === EMPTY || state.marks[index] === CROSS) {
+  const activeMark = state.memoMode ? state.memoMarks[index] : state.marks[index];
+  if (activeMark === EMPTY || activeMark === CROSS) {
     crossDrag.longPressTimer = window.setTimeout(() => {
       crossDrag.longPressed = true;
       placeCat(index);
@@ -647,6 +710,8 @@ continueBtn.addEventListener("click", showGame);
 homeBtn.addEventListener("click", showHome);
 resetBtn.addEventListener("click", resetLevel);
 hintBtn.addEventListener("click", revealHint);
+memoBtn.addEventListener("click", toggleMemoMode);
+resetMemoBtn.addEventListener("click", resetMemo);
 autoSolveBtn.addEventListener("click", autoSolve);
 autoCrossToggle.addEventListener("change", () => {
   state.autoCross = autoCrossToggle.checked;

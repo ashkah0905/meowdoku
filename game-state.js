@@ -2,6 +2,7 @@
 
 const MEOWDOKU_GAME_STATE = (() => {
   const VALID_MARKS = new Set(["empty", "cross", "cat", "wrong"]);
+  const VALID_MEMO_MARKS = new Set(["empty", "cross", "cat"]);
 
   function createGame(levelIndex, options) {
     const {
@@ -14,6 +15,8 @@ const MEOWDOKU_GAME_STATE = (() => {
     return {
       levelIndex,
       marks: Array(cellCount ?? size * size).fill("empty"),
+      memoMarks: Array(cellCount ?? size * size).fill("empty"),
+      memoMode: false,
       lives: maxLives,
       autoCross,
       completedLevelIds: [...completedLevelIds],
@@ -36,6 +39,16 @@ const MEOWDOKU_GAME_STATE = (() => {
       !Array.isArray(saved.marks) ||
       saved.marks.length !== cellCount ||
       saved.marks.some((mark) => !VALID_MARKS.has(mark))
+    ) {
+      return null;
+    }
+    const memoMarks = saved.memoMarks === undefined
+      ? Array(cellCount).fill("empty")
+      : saved.memoMarks;
+    if (
+      !Array.isArray(memoMarks) ||
+      memoMarks.length !== cellCount ||
+      memoMarks.some((mark) => !VALID_MEMO_MARKS.has(mark))
     ) {
       return null;
     }
@@ -70,6 +83,8 @@ const MEOWDOKU_GAME_STATE = (() => {
     return {
       levelIndex: saved.levelIndex,
       marks: [...saved.marks],
+      memoMarks: [...memoMarks],
+      memoMode: saved.memoMode === true,
       lives: saved.lives,
       autoCross: typeof saved.autoCross === "boolean" ? saved.autoCross : true,
       completedLevelIds,

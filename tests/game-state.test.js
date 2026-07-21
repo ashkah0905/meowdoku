@@ -24,6 +24,8 @@ test("新規ゲームを既定値で作成できる", () => {
   const game = validGame();
   assert.equal(game.levelIndex, 0);
   assert.equal(game.marks.length, 25);
+  assert.deepEqual(game.memoMarks, Array(25).fill("empty"));
+  assert.equal(game.memoMode, false);
   assert.equal(game.lives, 3);
   assert.equal(game.autoCross, true);
   assert.deepEqual(game.completedLevelIds, []);
@@ -58,6 +60,33 @@ test("古い保存データでは自動入力をオンにする", () => {
   const game = validGame();
   delete game.autoCross;
   assert.equal(normalizeGame(game, options).autoCross, true);
+});
+
+test("古い保存データには空のメモ状態を補う", () => {
+  const game = validGame();
+  delete game.memoMarks;
+  delete game.memoMode;
+  const normalized = normalizeGame(game, options);
+  assert.deepEqual(normalized.memoMarks, Array(25).fill("empty"));
+  assert.equal(normalized.memoMode, false);
+});
+
+test("メモ状態を復元できる", () => {
+  const game = validGame();
+  game.memoMarks[0] = "cat";
+  game.memoMarks[1] = "cross";
+  game.memoMode = true;
+  assert.deepEqual(normalizeGame(game, options), game);
+});
+
+test("不正なメモ状態を拒否する", () => {
+  const invalidValue = validGame();
+  invalidValue.memoMarks[0] = "wrong";
+  assert.equal(normalizeGame(invalidValue, options), null);
+
+  const invalidLength = validGame();
+  invalidLength.memoMarks.pop();
+  assert.equal(normalizeGame(invalidLength, options), null);
 });
 
 test("クリア済みレベルを保存データから復元できる", () => {
