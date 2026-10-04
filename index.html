@@ -61,9 +61,11 @@
       <button id="memoBtn" type="button" aria-pressed="false">メモ</button>
       <button id="autoSolveBtn" class="finish-action" type="button" hidden>仕上げる</button>
       <button id="resetBtn" type="button">リセット</button>
+      <button id="nextLevelBtn" class="primary-action" type="button" hidden>次の問題</button>
       <button id="resetMemoBtn" class="memo-reset" type="button" hidden>メモをリセット</button>
     </section>
     <p id="toast" class="toast" aria-hidden="true" hidden></p>
+    <p id="saveWarning" role="status" hidden>保存できませんでした。このまま遊べますが、再読み込みすると今回の進行状況が失われる可能性があります。</p>
   </main>
 
   <div id="resultDialog" class="dialog" aria-hidden="true">
@@ -84,6 +86,6 @@
   <script src="./progression.js?v=2"></script>
   <script src="./generated-level-store.js?v=2"></script>
   <script src="./game-state.js"></script>
-  <script src="./main.js?v=5"></script>
+  <script src="./main.js?v=6"></script>
 </body>
 </html>

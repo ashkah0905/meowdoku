@@ -103,7 +103,12 @@ const MEOWDOKU_GAME_STATE = (() => {
   }
 
   function saveGame(storage, key, state) {
-    storage.setItem(key, JSON.stringify(state));
+    try {
+      storage.setItem(key, JSON.stringify(state));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function findResumeLevelIndex(state, levels) {

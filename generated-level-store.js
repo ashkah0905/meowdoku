@@ -78,8 +78,12 @@ const MEOWDOKU_GENERATED_LEVEL_STORE = (() => {
     }
     const levels = loadGeneratedLevels(storage).filter((saved) => saved.id !== level.id);
     levels.push(clone(level));
-    storage.setItem(STORAGE_KEY, JSON.stringify({ generatorVersion: GENERATOR_VERSION, levels }));
-    return true;
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify({ generatorVersion: GENERATOR_VERSION, levels }));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function removeInvalidGeneratedLevels(storage) {

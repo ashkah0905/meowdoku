@@ -122,8 +122,16 @@ test("保存した状態を再読み込みできる", () => {
     setItem(key, value) { this.value = value; }
   };
   const game = { ...validGame(), lives: 1, autoCross: false };
-  saveGame(storage, "save", game);
+  assert.equal(saveGame(storage, "save", game), true);
   assert.deepEqual(loadGame(storage, "save", options), game);
+});
+
+test("保存先の容量超過でも例外を投げず失敗を返す", () => {
+  const game = validGame();
+  const storage = { setItem() { throw new Error("QuotaExceededError"); } };
+  assert.equal(saveGame(storage, "save", game), false);
+  assert.deepEqual(game, validGame());
+  assert.equal(saveGame(null, "save", game), false);
 });
 
 test("6x6レベルの36マスを復元できる", () => {

@@ -9,6 +9,13 @@ const CAT = "cat";
 const WRONG = "wrong";
 
 const generatedLevelStore = globalThis.MEOWDOKU_GENERATED_LEVEL_STORE;
+let storage = null;
+try {
+  storage = localStorage;
+} catch {
+  // Storage can be unavailable even when the browser can run the game.
+}
+let hasSaveFailure = !storage;
 
 function levelNumber(level) {
   return Number(level.id.slice(6));
@@ -16,7 +23,7 @@ function levelNumber(level) {
 
 const LEVELS = [
   ...globalThis.MEOWDOKU_LEVELS,
-  ...generatedLevelStore.loadGeneratedLevels(localStorage)
+  ...generatedLevelStore.loadGeneratedLevels(storage)
 ].sort((levelA, levelB) => levelNumber(levelA) - levelNumber(levelB));
 
 const boardEl = document.querySelector("#board");
@@ -35,7 +42,9 @@ const lifeHearts = document.querySelector("#lifeHearts");
 const autoCrossToggle = document.querySelector("#autoCrossToggle");
 const statusText = document.querySelector("#statusText");
 const toast = document.querySelector("#toast");
+const saveWarning = document.querySelector("#saveWarning");
 const resetBtn = document.querySelector("#resetBtn");
+const nextLevelBtn = document.querySelector("#nextLevelBtn");
 const hintBtn = document.querySelector("#hintBtn");
 const memoBtn = document.querySelector("#memoBtn");
 const resetMemoBtn = document.querySelector("#resetMemoBtn");
@@ -74,8 +83,11 @@ try {
   generationWorker.addEventListener("message", (event) => {
     const { requestId, level } = event.data;
     const request = generationRequests.get(requestId);
+    if (!request) {
+      return;
+    }
     generationRequests.delete(requestId);
-    request?.resolve(saveAndRegisterGeneratedLevel(level));
+    request.resolve(saveAndRegisterGeneratedLevel(level));
   });
   generationWorker.addEventListener("error", () => {
     generationWorker = null;
@@ -91,8 +103,11 @@ try {
 }
 
 function saveAndRegisterGeneratedLevel(level) {
-  if (!level || !generatedLevelStore.saveGeneratedLevel(localStorage, level)) {
+  if (!level || !generatedLevelStore.isValidGeneratedLevel(level)) {
     return null;
+  }
+  if (!generatedLevelStore.saveGeneratedLevel(storage, level)) {
+    hasSaveFailure = true;
   }
   if (!LEVELS.some((savedLevel) => savedLevel.id === level.id)) {
     LEVELS.push(level);
@@ -164,14 +179,17 @@ function createGame(levelIndex, autoCross = true, completedLevelIds = []) {
 }
 
 function loadGame() {
-  return globalThis.MEOWDOKU_GAME_STATE.loadGame(localStorage, SAVE_KEY, {
+  return globalThis.MEOWDOKU_GAME_STATE.loadGame(storage, SAVE_KEY, {
     levels: LEVELS,
     maxLives: MAX_LIVES
   });
 }
 
 function saveGame() {
-  globalThis.MEOWDOKU_GAME_STATE.saveGame(localStorage, SAVE_KEY, state);
+  if (!globalThis.MEOWDOKU_GAME_STATE.saveGame(storage, SAVE_KEY, state)) {
+    hasSaveFailure = true;
+  }
+  saveWarning.hidden = !hasSaveFailure;
 }
 
 function resumeGame(savedState) {
@@ -227,6 +245,8 @@ function render() {
   resetMemoBtn.hidden = !state.memoMode;
   autoSolveBtn.hidden = !canShowAutoSolve();
   autoSolveBtn.disabled = isAutoSolving;
+  nextLevelBtn.hidden = !state.completed;
+  nextLevelBtn.disabled = isChangingLevel;
 
   boardEl.innerHTML = "";
   boardEl.style.setProperty("--board-size", String(level.size));
@@ -674,6 +694,7 @@ async function changeLevel(step) {
   } finally {
     isChangingLevel = false;
     closeDialogBtn.disabled = false;
+    nextLevelBtn.disabled = false;
   }
 }
 
@@ -767,6 +788,7 @@ boardEl.addEventListener("contextmenu", (event) => {
 continueBtn.addEventListener("click", showGame);
 homeBtn.addEventListener("click", showHome);
 resetBtn.addEventListener("click", resetLevel);
+nextLevelBtn.addEventListener("click", () => changeLevel(1));
 hintBtn.addEventListener("click", revealHint);
 memoBtn.addEventListener("click", toggleMemoMode);
 resetMemoBtn.addEventListener("click", resetMemo);

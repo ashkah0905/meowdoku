@@ -82,3 +82,12 @@ test("不正な問題は保存しない", () => {
   assert.equal(saveGeneratedLevel(storage, { ...generatedLevel(), cats: [] }), false);
   assert.equal(storage.value, null);
 });
+
+test("生成問題の保存先が使えなくても例外を投げず失敗を返す", () => {
+  const level = generatedLevel();
+  const original = structuredClone(level);
+  const storage = { getItem() { return null; }, setItem() { throw new Error("QuotaExceededError"); } };
+  assert.equal(saveGeneratedLevel(storage, level), false);
+  assert.deepEqual(level, original);
+  assert.equal(saveGeneratedLevel(null, level), false);
+});
