@@ -297,24 +297,29 @@ h1 {
 .cell.color-6 { background: #e58b63; }
 .cell.color-7 { background: #5fa6a8; }
 
+.board[data-size="5"] {
+  --mark-size: 2.25rem;
+  --cat-size: 1.8rem;
+  --memo-size: 1.2rem;
+}
+
+.board[data-size="6"] {
+  --mark-size: 2rem;
+  --cat-size: 1.6rem;
+  --memo-size: 1.1rem;
+}
+
+.board[data-size="7"] {
+  --mark-size: 1.75rem;
+  --cat-size: 1.4rem;
+  --memo-size: 1rem;
+}
+
 .board[data-size="8"] {
   --cell-gap: 3px;
-}
-
-.board[data-size="8"] .mark {
-  font-size: 1.35rem;
-}
-
-.board[data-size="8"] .cross-mark {
-  font-size: 1.55rem;
-}
-
-.board[data-size="8"] .cat-mark {
-  font-size: 1.25rem;
-}
-
-.board[data-size="8"] .memo-mark {
-  font-size: 0.9rem;
+  --mark-size: 1.55rem;
+  --cat-size: 1.25rem;
+  --memo-size: 0.9rem;
 }
 
 .mark {
@@ -327,21 +332,20 @@ h1 {
   color: rgba(255, 255, 255, 0.95);
   text-shadow: 0 2px 8px rgba(75, 46, 54, 0.28);
   font-family: Arial, "Yu Gothic", system-ui, sans-serif;
-  font-size: clamp(1.55rem, 11vw, 2.2rem);
+  font-size: var(--mark-size);
   font-weight: 900;
   line-height: 1;
   pointer-events: none;
   z-index: 2;
 }
 
-.cross-mark {
-  font-size: clamp(1.85rem, 12vw, 2.45rem);
-}
-
 .cat-mark {
   color: #2f2b2d;
   font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
-  font-size: clamp(1.45rem, 10vw, 2.05rem);
+  font-size: var(--cat-size);
+  font-weight: 400;
+  /* Center the visible emoji; keep this offset independent of the pop animation. */
+  translate: -0.04em -0.12em;
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 14px rgba(255, 246, 92, 0.9);
@@ -404,7 +408,7 @@ h1 {
 .memo-mark {
   inset: 18%;
   opacity: 0.58;
-  font-size: clamp(1rem, 7vw, 1.35rem);
+  font-size: var(--memo-size);
   text-shadow: 0 1px 4px rgba(75, 46, 54, 0.2);
 }
 
@@ -430,7 +434,7 @@ h1 {
 
 .wrong-mark {
   color: var(--danger);
-  font-size: clamp(1.95rem, 13vw, 2.55rem);
+  font-size: var(--mark-size);
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 12px rgba(255, 255, 255, 0.65);
@@ -525,6 +529,7 @@ h1 {
 
 .dialog {
   position: fixed;
+  z-index: 15;
   inset: 0;
   display: none;
   place-items: center;
