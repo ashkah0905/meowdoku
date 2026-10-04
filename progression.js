@@ -37,6 +37,7 @@ const MEOWDOKU_PROGRESSION = (() => {
       seed: `meowdoku-v${GENERATOR_VERSION}:${levelNumber}`,
       minScore: profile.minScore + sizeScoreOffset,
       maxScore: profile.maxScore + sizeScoreOffset,
+      maxSeedRetries: 2,
       maxAttempts: 10000
     };
   }

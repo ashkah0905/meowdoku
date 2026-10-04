@@ -141,37 +141,40 @@ const MEOWDOKU_LEVEL_GENERATOR = (() => {
       minBoardScore = 0,
       minLogicScore = 0,
       minSearchScore = 0,
+      maxSeedRetries = 0,
       maxAttempts = 1000
     } = options;
-    const random = createSeededRandom(seed);
-
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const columns = generateCatColumns(size, random);
-      if (!columns) {
-        return null;
-      }
-      const cats = columns.map((column, row) => [row, column]);
-      const level = {
-        id,
-        size,
-        difficulty,
-        name,
-        regions: growConnectedRegions(size, cats, random),
-        cats
-      };
-      if (countSolutions(level, 2) !== 1) {
-        continue;
-      }
-      const analysis = analyzeLevel(level);
-      if (
-        analysis.solved &&
-        analysis.score >= minScore &&
-        analysis.score <= maxScore &&
-        analysis.metrics.board.score >= minBoardScore &&
-        analysis.metrics.logic.score >= minLogicScore &&
-        analysis.metrics.search.score >= minSearchScore
-      ) {
-        return { level, analysis };
+    // Retry only after exhausting a seed; preserve existing successful boards.
+    for (let retry = 0; retry <= maxSeedRetries; retry += 1) {
+      const random = createSeededRandom(retry === 0 ? seed : `${seed}:retry:${retry}`);
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const columns = generateCatColumns(size, random);
+        if (!columns) {
+          return null;
+        }
+        const cats = columns.map((column, row) => [row, column]);
+        const level = {
+          id,
+          size,
+          difficulty,
+          name,
+          regions: growConnectedRegions(size, cats, random),
+          cats
+        };
+        if (countSolutions(level, 2) !== 1) {
+          continue;
+        }
+        const analysis = analyzeLevel(level);
+        if (
+          analysis.solved &&
+          analysis.score >= minScore &&
+          analysis.score <= maxScore &&
+          analysis.metrics.board.score >= minBoardScore &&
+          analysis.metrics.logic.score >= minLogicScore &&
+          analysis.metrics.search.score >= minSearchScore
+        ) {
+          return { level, analysis };
+        }
       }
     }
 

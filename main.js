@@ -89,7 +89,7 @@ const generationRequests = new Map();
 const pendingGeneration = new Map();
 
 try {
-  generationWorker = new Worker("./level-worker.js?v=2");
+  generationWorker = new Worker("./level-worker.js?v=3");
   generationWorker.addEventListener("message", (event) => {
     const { requestId, level } = event.data;
     const request = generationRequests.get(requestId);

@@ -36,6 +36,7 @@ test("生成失敗をnullとして扱える", () => {
   const options = {
     ...getGenerationOptions(11),
     minScore: 999,
+    maxSeedRetries: 0,
     maxAttempts: 1
   };
   assert.equal(generateLevel(options), null);
@@ -64,4 +65,19 @@ test("8x8問題を一意解で生成して保存できる", () => {
   const storage = createStorage();
   assert.equal(saveGeneratedLevel(storage, result.level), true);
   assert.deepEqual(findGeneratedLevel(storage, result.level.id), result.level);
+});
+
+test("80面目は最初のseedで見つからなくても難易度条件を保ち生成できる", () => {
+  const options = getGenerationOptions(80);
+  const result = generateLevel(options);
+  assert.ok(result);
+  assert.equal(result.level.id, "stage-080");
+  assert.equal(result.level.size, 8);
+  assert.equal(countSolutions(result.level, 2), 1);
+  assert.equal(result.analysis.solved, true);
+  assert.ok(result.analysis.score >= options.minScore);
+  assert.ok(result.analysis.score <= options.maxScore);
+  const storage = createStorage();
+  assert.equal(saveGeneratedLevel(storage, result.level), true);
+  assert.deepEqual(findGeneratedLevel(storage, options.id), result.level);
 });
