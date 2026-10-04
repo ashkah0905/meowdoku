@@ -189,7 +189,6 @@ function saveGame() {
   if (!globalThis.MEOWDOKU_GAME_STATE.saveGame(storage, SAVE_KEY, state)) {
     hasSaveFailure = true;
   }
-  saveWarning.hidden = !hasSaveFailure;
 }
 
 function resumeGame(savedState) {
@@ -227,6 +226,9 @@ function foundCatCount() {
 }
 
 function render() {
+  const focusedCellIndex = boardEl.contains(document.activeElement)
+    ? document.activeElement.dataset.index
+    : null;
   const level = getLevel();
   const isPreviouslyCompleted = state.completedLevelIds.includes(level.id);
   const difficultyLabel = DIFFICULTY_LABELS[level.difficulty];
@@ -314,7 +316,10 @@ function render() {
     boardEl.appendChild(cell);
   }
 
-  saveGame();
+  if (focusedCellIndex !== null && !resultDialog.classList.contains("open")) {
+    boardEl.querySelector(`[data-index="${focusedCellIndex}"]`)?.focus();
+  }
+  saveWarning.hidden = !hasSaveFailure;
 }
 
 function renderHome() {
@@ -369,6 +374,7 @@ function toggleCross(index) {
       state.memoMarks[index] = state.memoMarks[index] === CROSS ? EMPTY : CROSS;
       setStatus(state.memoMarks[index] === CROSS ? "メモの×をつけました。" : "メモを消しました。");
     }
+    saveGame();
     render();
     return;
   }
@@ -386,10 +392,18 @@ function toggleCross(index) {
   }
 
   checkComplete();
+  saveGame();
   render();
 }
 
 function placeCat(index) {
+  const activeMark = state.memoMode ? state.memoMarks[index] : state.marks[index];
+  if (
+    isAutoSolving || state.completed || state.lives <= 0 ||
+    (activeMark !== EMPTY && activeMark !== CROSS && !(state.memoMode && activeMark === CAT))
+  ) {
+    return;
+  }
   state.selected = index;
   state.hint = null;
   if (state.memoMode) {
@@ -400,6 +414,7 @@ function placeCat(index) {
       setStatus(state.memoMarks[index] === CAT ? "メモのネコを置きました。" : "メモを消しました。");
     }
     navigator.vibrate?.(20);
+    saveGame();
     render();
     return;
   }
@@ -412,6 +427,7 @@ function placeCat(index) {
   }
   checkComplete();
   navigator.vibrate?.(30);
+  saveGame();
   render();
 }
 
@@ -456,9 +472,15 @@ function finishCrossDrag(event) {
   const gesture = crossDrag;
   crossDrag = null;
 
+  if (event.type === "pointercancel" && gesture.touched.size > 0) {
+    saveGame();
+    render();
+  }
+
   if (event.type !== "pointercancel" && !gesture.longPressed) {
     if (gesture.dragging) {
       setStatus("×をつけました。");
+      saveGame();
       render();
     } else if (!gesture.moved) {
       toggleCross(gesture.startIndex);
@@ -545,10 +567,6 @@ function buildAutoSolvePlan() {
   return globalThis.MEOWDOKU_SOLVER.buildAutoSolvePlan(getLevel(), state.marks);
 }
 
-function getConflictingIndexes(index) {
-  return globalThis.MEOWDOKU_SOLVER.getConflictingIndexes(getLevel(), index);
-}
-
 function autoSolve() {
   if (isAutoSolving) {
     return;
@@ -569,11 +587,13 @@ function autoSolve() {
   }
   state.hint = { primary: plan, targets: [], message: "残りのネコをロジックで仕上げました。" };
   isAutoSolving = true;
+  saveGame();
   setStatus("残りのネコをロジックで仕上げました。", true);
   render();
   window.setTimeout(() => {
     isAutoSolving = false;
     checkComplete();
+    saveGame();
     render();
   }, 650);
 }
@@ -632,6 +652,7 @@ function resetLevel() {
   state = createGame(state.levelIndex, state.autoCross, state.completedLevelIds);
   closeDialog();
   setStatus("このレベルを最初からやり直します。");
+  saveGame();
   render();
 }
 
@@ -643,12 +664,14 @@ function toggleMemoMode() {
   setStatus(state.memoMode
     ? "メモモードです。タップで小さい×、長押しで小さいネコを置けます。"
     : "メモモードを終了しました。", true);
+  saveGame();
   render();
 }
 
 function resetMemo() {
   state.memoMarks.fill(EMPTY);
   setStatus("メモをすべて消しました。");
+  saveGame();
   render();
 }
 
@@ -657,6 +680,7 @@ function selectLevel(levelIndex) {
   state = createGame(levelIndex, state.autoCross, state.completedLevelIds);
   closeDialog();
   setStatus(`${getLevel().name} を開始しました。`);
+  saveGame();
   render();
   const selectedLevelNumber = levelNumber(getLevel());
   if (selectedLevelNumber > globalThis.MEOWDOKU_LEVELS.length) {
@@ -708,6 +732,21 @@ boardEl.addEventListener("click", (event) => {
     return;
   }
   toggleCross(Number(cell.dataset.index));
+});
+
+boardEl.addEventListener("keydown", (event) => {
+  if (
+    event.key.toLowerCase() !== "c" || event.repeat ||
+    event.ctrlKey || event.altKey || event.metaKey ||
+    resultDialog.classList.contains("open")
+  ) {
+    return;
+  }
+  const cell = event.target.closest(".cell");
+  if (cell) {
+    event.preventDefault();
+    placeCat(Number(cell.dataset.index));
+  }
 });
 
 boardEl.addEventListener("pointerdown", (event) => {
@@ -800,6 +839,7 @@ autoCrossToggle.addEventListener("change", () => {
       ? "ネコ発見時の自動×をオンにしました。"
       : "ネコ発見時の自動×をオフにしました。"
   );
+  saveGame();
   render();
 });
 closeDialogBtn.addEventListener("click", () => {

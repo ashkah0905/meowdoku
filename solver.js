@@ -260,61 +260,6 @@ const MEOWDOKU_SOLVER = (() => {
     return indexes;
   }
 
-  function isWorkingLegalCandidate(level, working, index) {
-    if (working[index] !== EMPTY) {
-      return false;
-    }
-    const placedCats = getPlacedCats(working);
-    return placedCats.every((catIndex) => !conflictsWithCat(level, index, catIndex));
-  }
-
-  function getWorkingUnitCandidates(level, working, predicate) {
-    return working
-      .map((mark, index) =>
-        mark === EMPTY && predicate(index) && isWorkingLegalCandidate(level, working, index)
-          ? index
-          : null
-      )
-      .filter((index) => index !== null);
-  }
-
-  function findWorkingSingleCandidate(level, working) {
-    for (let row = 0; row < level.size; row += 1) {
-      const candidates = getWorkingUnitCandidates(
-        level,
-        working,
-        (index) => levelRowCol(level, index)[0] === row
-      );
-      if (candidates.length === 1) {
-        return candidates[0];
-      }
-    }
-
-    for (let col = 0; col < level.size; col += 1) {
-      const candidates = getWorkingUnitCandidates(
-        level,
-        working,
-        (index) => levelRowCol(level, index)[1] === col
-      );
-      if (candidates.length === 1) {
-        return candidates[0];
-      }
-    }
-
-    for (let region = 0; region < level.size; region += 1) {
-      const candidates = getWorkingUnitCandidates(
-        level,
-        working,
-        (index) => getRegion(level, index) === region
-      );
-      if (candidates.length === 1) {
-        return candidates[0];
-      }
-    }
-
-    return null;
-  }
-
   function buildAutoSolvePlan(level, marks) {
     const cats = new Set(level.cats.map(([row, col]) => levelIndex(level, row, col)));
     const working = [...marks];
@@ -334,7 +279,7 @@ const MEOWDOKU_SOLVER = (() => {
         }
       }
 
-      const single = findWorkingSingleCandidate(level, working);
+      const single = findSingleCandidateHint(level, working)?.primary[0] ?? null;
       if (single !== null && working[single] === EMPTY) {
         if (!cats.has(single)) {
           return null;

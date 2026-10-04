@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const levels = require("../levels.js");
 const {
   STORAGE_KEY,
+  isValidGeneratedLevel,
   loadGeneratedLevels,
   findGeneratedLevel,
   saveGeneratedLevel,
@@ -90,4 +91,39 @@ test("生成問題の保存先が使えなくても例外を投げず失敗を�
   assert.equal(saveGeneratedLevel(storage, level), false);
   assert.deepEqual(level, original);
   assert.equal(saveGeneratedLevel(null, level), false);
+});
+
+test("座標配列の順序によらず正しい配置を受け入れ元データを変えない", () => {
+  const level = generatedLevel();
+  level.cats.reverse();
+  const original = structuredClone(level);
+  assert.equal(isValidGeneratedLevel(level), true);
+  assert.deepEqual(level, original);
+});
+
+test("配列順を変えた隣接するネコの配置を拒否する", () => {
+  const level = {
+    id: "stage-011", name: "不正な問題", size: 5, difficulty: "normal",
+    regions: Array.from({ length: 5 }, (_, row) => Array(5).fill(row)),
+    cats: [[0, 0], [2, 2], [4, 4], [1, 1], [3, 3]]
+  };
+  assert.equal(isValidGeneratedLevel(level), false);
+});
+
+for (const coordinate of [null, 0, {}, "01", [], [0], [0, 1, 2], [0, 99]]) {
+  test("不正な座標形式を例外なしで拒否する: " + JSON.stringify(coordinate), () => {
+    const level = generatedLevel();
+    level.cats[0] = coordinate;
+    assert.equal(isValidGeneratedLevel(level), false);
+    assert.equal(saveGeneratedLevel(createStorage(), level), false);
+  });
+}
+
+test("壊れた座標を含む1問だけを除外し正常なキャッシュを保持する", () => {
+  const storage = createStorage();
+  const valid = generatedLevel();
+  const invalid = generatedLevel("stage-012");
+  invalid.cats[0] = null;
+  storage.value = JSON.stringify({ generatorVersion: 1, levels: [invalid, valid] });
+  assert.deepEqual(loadGeneratedLevels(storage), [valid]);
 });

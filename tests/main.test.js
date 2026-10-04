@@ -48,6 +48,59 @@ test("リセット後には次の問題ボタンを表示しない", () => {
   assert.equal(app.get("nextLevelBtn").hidden, true);
 });
 
+function pressCat(app, index, overrides = {}) {
+  const cell = app.get("board").children[index];
+  cell.focus();
+  app.get("board").dispatch("keydown", { key: "c", target: cell, preventDefault() {}, ...overrides });
+}
+
+test("キーボードでネコを置き再描画後も操作したマスにフォーカスを保つ", () => {
+  const app = createApp();
+  app.get("continueBtn").dispatch("click");
+  const [row, column] = levels[0].cats[0];
+  const index = row * 5 + column;
+  pressCat(app, index);
+  assert.equal(app.run(`state.marks[${index}]`), "cat");
+  assert.equal(app.document.activeElement, app.get("board").children[index]);
+  const emptyCell = app.get("board").children.find((cell) => app.run(`state.marks[${cell.dataset.index}]`) === "cross");
+  emptyCell.focus();
+  app.get("board").dispatch("click", { target: emptyCell });
+  assert.equal(app.document.activeElement, app.get("board").children[Number(emptyCell.dataset.index)]);
+});
+
+test("キーボードだけでクリアしダイアログへフォーカスを移せる", () => {
+  const app = createApp();
+  app.get("continueBtn").dispatch("click");
+  for (const [row, column] of levels[0].cats) pressCat(app, row * 5 + column);
+  assert.equal(app.run("state.completed"), true);
+  assert.equal(app.document.activeElement, app.get("closeDialogBtn"));
+});
+
+test("メモモードではCで仮のネコを切り替えライフを減らさない", () => {
+  const app = createApp();
+  app.get("continueBtn").dispatch("click");
+  app.get("memoBtn").dispatch("click");
+  pressCat(app, 0);
+  assert.equal(app.run("state.memoMarks[0]"), "cat");
+  assert.equal(app.run("state.marks[0]"), "empty");
+  pressCat(app, 0);
+  assert.equal(app.run("state.memoMarks[0]"), "empty");
+  assert.equal(app.run("state.lives"), 3);
+});
+
+test("キーリピート・修飾キー・操作不可の盤面ではネコを置かない", () => {
+  const app = createApp();
+  app.get("continueBtn").dispatch("click");
+  for (const overrides of [{ repeat: true }, { ctrlKey: true }, { altKey: true }, { metaKey: true }]) pressCat(app, 0, overrides);
+  assert.equal(app.run("state.marks[0]"), "empty");
+  for (const condition of ["state.completed = true", "state.lives = 0", "isAutoSolving = true"]) {
+    app.run("state.completed = false; state.lives = 3; isAutoSolving = false;");
+    app.run(condition);
+    pressCat(app, 0);
+    assert.equal(app.run("state.marks[0]"), "empty");
+  }
+});
+
 test("保存失敗時も盤面操作とリセットを続けられ警告を表示する", () => {
   const app = createApp({ failWrites: true });
   app.get("continueBtn").dispatch("click");
@@ -109,3 +162,48 @@ for (const workerAvailable of [false, true]) {
     assert.equal(app.get("saveWarning").hidden, false);
   });
 }
+
+test("表示だけの更新は保存せず盤面・メモ・設定の変更を保存する", () => {
+  const app = createApp();
+  const key = "meowdoku-logic-v1";
+  app.get("continueBtn").dispatch("click");
+  app.run("render()");
+  app.get("homeBtn").dispatch("click");
+  app.get("continueBtn").dispatch("click");
+  assert.equal(app.writes(key), 0);
+  app.run("toggleCross(0)");
+  assert.equal(app.writes(key), 1);
+  app.get("memoBtn").dispatch("click");
+  assert.equal(JSON.parse(app.storage.getItem(key)).memoMode, true);
+  pressCat(app, 2);
+  assert.equal(JSON.parse(app.storage.getItem(key)).memoMarks[2], "cat");
+  app.get("resetMemoBtn").dispatch("click");
+  assert.equal(JSON.parse(app.storage.getItem(key)).memoMarks[2], "empty");
+  const beforeSetting = app.writes(key);
+  app.get("autoCrossToggle").checked = false;
+  app.get("autoCrossToggle").dispatch("change");
+  assert.equal(app.writes(key), beforeSetting + 1);
+  assert.equal(JSON.parse(app.storage.getItem(key)).autoCross, false);
+});
+
+test("仕上げたクリア状態を保存し再読み込み後も次へ進める", async () => {
+  const app = createApp();
+  app.get("continueBtn").dispatch("click");
+  for (const [row, column] of levels[0].cats.slice(0, 4)) pressCat(app, row * 5 + column);
+  app.get("autoSolveBtn").dispatch("click");
+  app.runTimers(650);
+  const savedState = JSON.parse(app.storage.getItem("meowdoku-logic-v1"));
+  assert.equal(savedState.completed, true);
+  const reloaded = createApp({ savedState });
+  reloaded.get("continueBtn").dispatch("click");
+  await reloaded.get("nextLevelBtn").dispatch("click");
+  assert.equal(JSON.parse(reloaded.storage.getItem("meowdoku-logic-v1")).levelIndex, 1);
+});
+
+test("中断されたドラッグで入力済みの印も保存する", () => {
+  const app = createApp();
+  app.get("continueBtn").dispatch("click");
+  app.run("state.marks[0] = 'cross'; crossDrag = { pointerId: 1, touched: new Set([0]), longPressTimer: null }");
+  app.get("board").dispatch("pointercancel", { type: "pointercancel", pointerId: 1 });
+  assert.equal(JSON.parse(app.storage.getItem("meowdoku-logic-v1")).marks[0], "cross");
+});

@@ -30,9 +30,9 @@ const MEOWDOKU_GENERATED_LEVEL_STORE = (() => {
     if (new Set(regions.flat()).size !== size) {
       return false;
     }
-    if (cats.some(([row, column]) =>
-      !Number.isInteger(row) || row < 0 || row >= size ||
-      !Number.isInteger(column) || column < 0 || column >= size
+    if (cats.some((coordinate) =>
+      !Array.isArray(coordinate) || coordinate.length !== 2 ||
+      coordinate.some((value) => !Number.isInteger(value) || value < 0 || value >= size)
     )) {
       return false;
     }
@@ -43,8 +43,9 @@ const MEOWDOKU_GENERATED_LEVEL_STORE = (() => {
     ) {
       return false;
     }
-    return cats.every(([, column], row) =>
-      row === 0 || Math.abs(column - cats[row - 1][1]) > 1
+    const sortedCats = [...cats].sort(([rowA], [rowB]) => rowA - rowB);
+    return sortedCats.every(([, column], index) =>
+      index === 0 || Math.abs(column - sortedCats[index - 1][1]) > 1
     );
   }
 

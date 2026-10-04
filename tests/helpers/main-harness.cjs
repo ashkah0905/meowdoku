@@ -10,11 +10,13 @@ function createApp({ savedState, failWrites = false, workerAvailable = true, den
   const timers = new Map();
   const values = new Map();
   let timerId = 0;
+  const writeCounts = new Map();
   if (savedState) values.set("meowdoku-logic-v1", JSON.stringify(savedState));
   const storage = {
     getItem: (key) => values.get(key) ?? null,
     setItem(key, value) {
       if (failWrites) throw new Error("QuotaExceededError");
+      writeCounts.set(key, (writeCounts.get(key) ?? 0) + 1);
       values.set(key, value);
     }
   };
@@ -32,6 +34,8 @@ function createApp({ savedState, failWrites = false, workerAvailable = true, den
       },
       setAttribute(name, value) { this.attributes[name] = value; },
       appendChild(child) { this.children.push(child); },
+      contains(child) { return this.children.includes(child); },
+      closest(selector) { return selector === ".cell" && this.className?.startsWith("cell ") ? this : null; },
       set innerHTML(value) { this.children = []; },
       focus() { document.activeElement = this; },
       addEventListener(name, listener) { listeners.set(name, listener); },
@@ -72,6 +76,7 @@ function createApp({ savedState, failWrites = false, workerAvailable = true, den
   }
   return {
     context, storage, worker, document,
+    writes: (key) => writeCounts.get(key) ?? 0,
     get: (id) => elements.get(`#${id}`),
     run: (code) => vm.runInContext(code, context),
     runTimers(delay) {
