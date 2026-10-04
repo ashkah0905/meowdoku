@@ -590,3 +590,111 @@ h1 {
     font-size: 0.62rem;
   }
 }
+
+#gameScreen {
+  transition: opacity 100ms ease;
+}
+
+#gameScreen.level-leaving {
+  opacity: 0;
+}
+
+.level-transition {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity 100ms ease;
+  animation: level-transition-in 100ms ease;
+  outline: none;
+  text-align: center;
+}
+
+.level-transition.level-arriving {
+  opacity: 0;
+}
+
+.level-transition h2,
+.level-transition p {
+  margin: 0;
+}
+
+.level-transition h2 {
+  color: var(--accent);
+  font-size: 1.5rem;
+}
+
+.level-transition p {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.transition-cat {
+  display: block;
+  font-size: 3rem;
+  animation: transition-cat-hop 600ms ease-in-out infinite;
+}
+
+@keyframes level-transition-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes transition-cat-hop {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-8px) rotate(5deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #gameScreen,
+  .level-transition {
+    transition: none;
+    animation: none;
+  }
+
+  .transition-cat {
+    animation: none;
+  }
+}
+
+.transition-progress {
+  width: min(240px, 100%);
+  height: 8px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.transition-progress-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 700ms ease-out;
+}
+
+.level-preparing .transition-progress-fill {
+  transform: scaleX(0.8);
+}
+
+.level-ready .transition-progress-fill {
+  transform: scaleX(1);
+  transition-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-progress-fill {
+    transition: none;
+  }
+}

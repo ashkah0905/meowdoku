@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meow Logic</title>
-  <link rel="stylesheet" href="./styles.css?v=5">
+  <link rel="stylesheet" href="./styles.css?v=7">
 </head>
 <body>
   <main id="homeScreen" class="app home-screen">
@@ -69,6 +69,15 @@
     <p id="saveWarning" role="status" hidden>保存できませんでした。このまま遊べますが、再読み込みすると今回の進行状況が失われる可能性があります。</p>
   </main>
 
+  <div id="levelTransition" class="level-transition" role="status" aria-live="polite" tabindex="-1" hidden>
+    <span class="transition-cat" aria-hidden="true">🐱</span>
+    <h2 id="transitionLevelTitle"></h2>
+    <p>次の問題へ</p>
+    <div id="transitionProgress" class="transition-progress" role="progressbar" aria-label="次の問題の準備">
+      <span class="transition-progress-fill"></span>
+    </div>
+  </div>
+
   <div id="resultDialog" class="dialog" aria-hidden="true">
     <div class="dialog-backdrop"></div>
     <section class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultText">
@@ -87,6 +96,6 @@
   <script src="./progression.js?v=2"></script>
   <script src="./generated-level-store.js?v=2"></script>
   <script src="./game-state.js"></script>
-  <script src="./main.js?v=7"></script>
+  <script src="./main.js?v=9"></script>
 </body>
 </html>

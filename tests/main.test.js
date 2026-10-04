@@ -6,6 +6,21 @@ const levels = require("../levels.js");
 const { createGame } = require("../game-state.js");
 const { createApp } = require("./helpers/main-harness.cjs");
 
+const flushTasks = () => new Promise((resolve) => setImmediate(resolve));
+
+async function finishTransition(app) {
+  app.runTimers(100);
+  await flushTasks();
+  app.runTimers(0);
+  await flushTasks();
+  app.runTimers(700);
+  await flushTasks();
+  app.runTimers(200);
+  await flushTasks();
+  app.runTimers(100);
+  await flushTasks();
+}
+
 function completedGame(levelIndex = 0) {
   const level = levels[levelIndex];
   const state = createGame(levelIndex, { size: level.size, maxLives: 3 });
@@ -19,7 +34,9 @@ test("クリア済み盤面を再読み込みして次の問題へ進める", as
   const app = createApp({ savedState: completedGame() });
   app.get("continueBtn").dispatch("click");
   assert.equal(app.get("nextLevelBtn").hidden, false);
-  await app.get("nextLevelBtn").dispatch("click");
+  const transition = app.get("nextLevelBtn").dispatch("click");
+  await finishTransition(app);
+  await transition;
   assert.equal(app.run("getLevel().id"), "stage-002");
   assert.equal(app.run("state.completed"), false);
   assert.equal(app.get("nextLevelBtn").hidden, true);
@@ -36,7 +53,9 @@ for (const dismissal of ["backdrop", "Escape"]) {
     else app.get("resultDialog").querySelector(".dialog-backdrop").dispatch("click");
     assert.equal(app.get("resultDialog").classList.contains("open"), false);
     assert.equal(app.get("nextLevelBtn").hidden, false);
-    await app.get("nextLevelBtn").dispatch("click");
+    const transition = app.get("nextLevelBtn").dispatch("click");
+    await finishTransition(app);
+    await transition;
     assert.equal(app.run("getLevel().id"), "stage-002");
   });
 }
@@ -135,6 +154,7 @@ test("Worker生成問題の保存に失敗しても次へ進み待機状態を�
   const { requestId } = app.worker.messages.find((request) => request.levelNumber === 11);
   const level = { ...structuredClone(levels[6]), id: "stage-011", name: "レベル 11" };
   app.worker.dispatch("message", { data: { requestId, level } });
+  await finishTransition(app);
   await transition;
   assert.equal(app.run("getLevel().id"), "stage-011");
   assert.equal(app.run("isChangingLevel"), false);
@@ -155,6 +175,7 @@ for (const workerAvailable of [false, true]) {
     const transition = app.get("nextLevelBtn").dispatch("click");
     if (workerAvailable) app.worker.dispatch("error");
     app.runTimers(0);
+    await finishTransition(app);
     await transition;
     assert.equal(app.run("getLevel().id"), "stage-011");
     assert.equal(app.run("isChangingLevel"), false);
@@ -196,7 +217,9 @@ test("仕上げたクリア状態を保存し再読み込み後も次へ進め�
   assert.equal(savedState.completed, true);
   const reloaded = createApp({ savedState });
   reloaded.get("continueBtn").dispatch("click");
-  await reloaded.get("nextLevelBtn").dispatch("click");
+  const transition = reloaded.get("nextLevelBtn").dispatch("click");
+  await finishTransition(reloaded);
+  await transition;
   assert.equal(JSON.parse(reloaded.storage.getItem("meowdoku-logic-v1")).levelIndex, 1);
 });
 
@@ -206,4 +229,119 @@ test("中断されたドラッグで入力済みの印も保存する", () => {
   app.run("state.marks[0] = 'cross'; crossDrag = { pointerId: 1, touched: new Set([0]), longPressTimer: null }");
   app.get("board").dispatch("pointercancel", { type: "pointercancel", pointerId: 1 });
   assert.equal(JSON.parse(app.storage.getItem("meowdoku-logic-v1")).marks[0], "cross");
+});
+
+test("次の問題名を表示し最短1100msの遷移後に新しい盤面へフォーカスする", async () => {
+  const app = createApp({ savedState: completedGame() });
+  app.get("continueBtn").dispatch("click");
+  const transition = app.get("nextLevelBtn").dispatch("click");
+  assert.equal(app.get("transitionLevelTitle").textContent, "レベル 2");
+  assert.equal(app.get("levelTransition").hidden, false);
+  assert.equal(app.get("gameScreen").inert, true);
+  assert.equal(app.document.activeElement, app.get("levelTransition"));
+  assert.equal(app.run("getLevel().id"), "stage-001");
+  app.runTimers(100);
+  await flushTasks();
+  assert.equal(app.run("getLevel().id"), "stage-001");
+  app.runTimers(700);
+  await flushTasks();
+  assert.equal(app.run("getLevel().id"), "stage-001");
+  assert.equal(app.get("levelTransition").classList.contains("level-ready"), true);
+  assert.equal(app.get("transitionProgress").attributes["aria-valuetext"], "準備完了");
+  app.runTimers(200);
+  await flushTasks();
+  assert.equal(app.run("getLevel().id"), "stage-002");
+  assert.equal(app.get("levelTransition").hidden, false);
+  assert.equal(app.get("levelTransition").classList.contains("level-arriving"), true);
+  app.runTimers(100);
+  await transition;
+  assert.equal(app.get("levelTransition").hidden, true);
+  assert.equal(app.get("levelTransition").classList.contains("level-ready"), false);
+  assert.equal(app.get("levelTransition").classList.contains("level-preparing"), false);
+  assert.equal(app.get("gameScreen").inert, false);
+  assert.equal(app.get("gameScreen").attributes["aria-busy"], "false");
+  assert.equal(app.document.activeElement, app.get("board").children[0]);
+});
+
+test("クリアダイアログのつづけるでも遷移画面を挟む", async () => {
+  const app = createApp();
+  app.get("continueBtn").dispatch("click");
+  for (const [row, column] of levels[0].cats) pressCat(app, row * 5 + column);
+  const transition = app.get("closeDialogBtn").dispatch("click");
+  assert.equal(app.get("resultDialog").classList.contains("open"), false);
+  assert.equal(app.get("levelTransition").hidden, false);
+  assert.equal(app.run("getLevel().id"), "stage-001");
+  await finishTransition(app);
+  await transition;
+  assert.equal(app.run("getLevel().id"), "stage-002");
+});
+
+test("生成が遅い場合は遷移画面を表示し続けてから盤面へ進む", async () => {
+  const app = createApp({ savedState: completedGame(9) });
+  app.get("continueBtn").dispatch("click");
+  const transition = app.get("nextLevelBtn").dispatch("click");
+  app.runTimers(100);
+  await flushTasks();
+  app.runTimers(700);
+  await flushTasks();
+  assert.equal(app.get("levelTransition").hidden, false);
+  assert.equal(app.get("levelTransition").classList.contains("level-preparing"), true);
+  assert.equal(app.get("levelTransition").classList.contains("level-ready"), false);
+  assert.equal(app.get("transitionProgress").attributes["aria-valuetext"], "次の問題を準備中");
+  assert.equal(app.run("getLevel().id"), "stage-010");
+  const { requestId } = app.worker.messages.find((request) => request.levelNumber === 11);
+  const level = { ...structuredClone(levels[6]), id: "stage-011", name: "レベル 11" };
+  app.worker.dispatch("message", { data: { requestId, level } });
+  await flushTasks();
+  assert.equal(app.get("levelTransition").classList.contains("level-ready"), true);
+  assert.equal(app.get("transitionProgress").attributes["aria-valuetext"], "準備完了");
+  app.runTimers(200);
+  await flushTasks();
+  assert.equal(app.get("levelTransition").classList.contains("level-arriving"), true);
+  app.runTimers(100);
+  await transition;
+  assert.equal(app.run("getLevel().id"), "stage-011");
+  assert.equal(app.get("levelTransition").hidden, true);
+});
+
+test("生成失敗時は元の盤面へ戻して再試行できる", async () => {
+  const app = createApp({ savedState: completedGame(9) });
+  app.get("continueBtn").dispatch("click");
+  const transition = app.get("nextLevelBtn").dispatch("click");
+  app.runTimers(100);
+  await flushTasks();
+  const { requestId } = app.worker.messages.find((request) => request.levelNumber === 11);
+  app.worker.dispatch("message", { data: { requestId, level: null } });
+  await finishTransition(app);
+  await transition;
+  assert.equal(app.run("getLevel().id"), "stage-010");
+  assert.equal(app.run("isChangingLevel"), false);
+  assert.equal(app.get("levelTransition").hidden, true);
+  assert.equal(app.get("gameScreen").inert, false);
+  assert.equal(app.get("nextLevelBtn").disabled, false);
+  assert.equal(app.document.activeElement, app.get("nextLevelBtn"));
+  const retry = app.get("nextLevelBtn").dispatch("click");
+  app.runTimers(100);
+  await flushTasks();
+  const retryRequest = app.worker.messages.filter((request) => request.levelNumber === 11).at(-1);
+  assert.notEqual(retryRequest.requestId, requestId);
+  app.worker.dispatch("message", { data: { requestId: retryRequest.requestId, level: null } });
+  await finishTransition(app);
+  await retry;
+});
+
+test("遷移中の連打やキーボード操作で盤面と保存データを変更しない", async () => {
+  const app = createApp({ savedState: completedGame() });
+  app.get("continueBtn").dispatch("click");
+  const savedBefore = app.storage.getItem("meowdoku-logic-v1");
+  const transition = app.get("nextLevelBtn").dispatch("click");
+  await app.get("nextLevelBtn").dispatch("click");
+  app.document.dispatch("keydown", { key: "r" });
+  app.document.dispatch("keydown", { key: "h" });
+  app.run("toggleCross(0); placeCat(0)");
+  assert.equal(app.run("state.completed"), true);
+  assert.equal(app.storage.getItem("meowdoku-logic-v1"), savedBefore);
+  await finishTransition(app);
+  await transition;
+  assert.equal(app.run("getLevel().id"), "stage-002");
 });

@@ -53,6 +53,12 @@ const resultDialog = document.querySelector("#resultDialog");
 const resultTitle = document.querySelector("#resultTitle");
 const resultText = document.querySelector("#resultText");
 const closeDialogBtn = document.querySelector("#closeDialogBtn");
+const levelTransition = document.querySelector("#levelTransition");
+const transitionLevelTitle = document.querySelector("#transitionLevelTitle");
+const transitionProgress = document.querySelector("#transitionProgress");
+const TRANSITION_FADE_MS = 100;
+const TRANSITION_HOLD_MS = 700;
+const TRANSITION_FINISH_MS = 200;
 
 const DIFFICULTY_LABELS = {
   normal: "",
@@ -361,7 +367,7 @@ function setStatus(message, visible = false) {
 }
 
 function toggleCross(index) {
-  if (isAutoSolving || state.completed || state.lives <= 0) {
+  if (isChangingLevel || isAutoSolving || state.completed || state.lives <= 0) {
     return;
   }
 
@@ -399,7 +405,7 @@ function toggleCross(index) {
 function placeCat(index) {
   const activeMark = state.memoMode ? state.memoMarks[index] : state.marks[index];
   if (
-    isAutoSolving || state.completed || state.lives <= 0 ||
+    isChangingLevel || isAutoSolving || state.completed || state.lives <= 0 ||
     (activeMark !== EMPTY && activeMark !== CROSS && !(state.memoMode && activeMark === CAT))
   ) {
     return;
@@ -648,6 +654,9 @@ function closeDialog() {
 }
 
 function resetLevel() {
+  if (isChangingLevel) {
+    return;
+  }
   isAutoSolving = false;
   state = createGame(state.levelIndex, state.autoCross, state.completedLevelIds);
   closeDialog();
@@ -699,17 +708,38 @@ async function changeLevel(step) {
   try {
     if (step > 0) {
       const targetLevelNumber = currentLevelNumber + step;
-      setStatus("次の問題を準備しています…", true);
+      closeDialog();
+      window.clearTimeout(toastTimer);
+      toast.hidden = true;
+      transitionLevelTitle.textContent = `レベル ${targetLevelNumber}`;
+      transitionProgress.setAttribute("aria-valuetext", "次の問題を準備中");
+      levelTransition.hidden = false;
+      gameScreen.inert = true;
+      gameScreen.setAttribute("aria-busy", "true");
+      gameScreen.classList.add("level-leaving");
+      levelTransition.focus();
       render();
-      const nextLevel = await ensureGeneratedLevel(targetLevelNumber);
+      // Let the transition paint before a main-thread generation fallback starts.
+      await new Promise((resolve) => window.setTimeout(resolve, TRANSITION_FADE_MS));
+      levelTransition.classList.add("level-preparing");
+      const [nextLevel] = await Promise.all([
+        ensureGeneratedLevel(targetLevelNumber),
+        new Promise((resolve) => window.setTimeout(resolve, TRANSITION_HOLD_MS))
+      ]);
       if (!nextLevel) {
         closeDialog();
         setStatus("問題を準備できませんでした。ページを再読み込みしてお試しください。", true);
         render();
         return;
       }
+      levelTransition.classList.add("level-ready");
+      transitionProgress.setAttribute("aria-valuetext", "準備完了");
+      await new Promise((resolve) => window.setTimeout(resolve, TRANSITION_FINISH_MS));
       const nextIndex = LEVELS.findIndex((level) => level.id === nextLevel.id);
       selectLevel(nextIndex);
+      gameScreen.classList.remove("level-leaving");
+      levelTransition.classList.add("level-arriving");
+      await new Promise((resolve) => window.setTimeout(resolve, TRANSITION_FADE_MS));
       return;
     }
 
@@ -719,6 +749,16 @@ async function changeLevel(step) {
     isChangingLevel = false;
     closeDialogBtn.disabled = false;
     nextLevelBtn.disabled = false;
+    levelTransition.hidden = true;
+    levelTransition.classList.remove("level-arriving");
+    levelTransition.classList.remove("level-preparing");
+    levelTransition.classList.remove("level-ready");
+    gameScreen.classList.remove("level-leaving");
+    gameScreen.inert = false;
+    gameScreen.setAttribute("aria-busy", "false");
+    if (!gameScreen.hidden) {
+      (state.completed ? nextLevelBtn : boardEl.querySelector(".cell"))?.focus();
+    }
   }
 }
 
@@ -844,7 +884,7 @@ autoCrossToggle.addEventListener("change", () => {
 });
 closeDialogBtn.addEventListener("click", () => {
   if (dialogMode === "clear") {
-    changeLevel(1);
+    return changeLevel(1);
   } else {
     closeDialog();
   }
@@ -852,6 +892,9 @@ closeDialogBtn.addEventListener("click", () => {
 resultDialog.querySelector(".dialog-backdrop").addEventListener("click", closeDialog);
 
 document.addEventListener("keydown", (event) => {
+  if (isChangingLevel) {
+    return;
+  }
   if (event.key === "Escape" && resultDialog.classList.contains("open")) {
     closeDialog();
     return;
