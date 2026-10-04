@@ -49,6 +49,7 @@ function createApp({ savedState, failWrites = false, workerAvailable = true, den
     };
   }
   const document = element();
+  document.documentElement = element();
   document.createElement = element;
   document.querySelector = (selector) => elements.get(selector);
   const html = fs.readFileSync(path.join(__dirname, "../../index.html"), "utf8");
@@ -60,6 +61,7 @@ function createApp({ savedState, failWrites = false, workerAvailable = true, den
   const context = vm.createContext({
     document, localStorage: storage, navigator: {},
     window: {
+      matchMedia() { return { matches: false, addEventListener() {} }; },
       setTimeout(callback, delay) { timers.set(++timerId, { callback, delay }); return timerId; },
       clearTimeout(id) { timers.delete(id); }
     },
@@ -74,6 +76,7 @@ function createApp({ savedState, failWrites = false, workerAvailable = true, den
   for (const [, filename] of html.matchAll(/<script src="\.\/([^"?]+)(?:\?[^"]*)?"><\/script>/g)) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "../..", filename), "utf8"), context);
   }
+  document.dispatch("DOMContentLoaded");
   return {
     context, storage, worker, document,
     writes: (key) => writeCounts.get(key) ?? 0,

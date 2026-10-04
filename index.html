@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meow Logic</title>
-  <link rel="stylesheet" href="./styles.css?v=11">
+  <script src="./theme.js?v=1"></script>
+  <link rel="stylesheet" href="./styles.css?v=12">
 </head>
 <body>
   <main id="homeScreen" class="app home-screen">
@@ -16,6 +17,15 @@
     </section>
     <button id="continueBtn" class="primary-action home-continue" type="button">つづける</button>
     <p id="homeClearCount">クリア 0問</p>
+    <div class="theme-setting">
+      <label for="themeSelect">テーマ</label>
+      <select id="themeSelect">
+        <option value="system">端末に合わせる</option>
+        <option value="light">ライト</option>
+        <option value="dark">ダーク</option>
+      </select>
+    </div>
+    <p id="themeWarning" role="status" hidden>テーマ設定を保存できませんでした。再読み込みすると元に戻ります。</p>
   </main>
 
   <main id="gameScreen" class="app" hidden>
