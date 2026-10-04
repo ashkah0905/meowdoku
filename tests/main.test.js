@@ -345,3 +345,46 @@ test("遷移中の連打やキーボード操作で盤面と保存データを�
   await transition;
   assert.equal(app.run("getLevel().id"), "stage-002");
 });
+
+function loseAllLives(app) {
+  app.get("continueBtn").dispatch("click");
+  for (const index of [0, 2, 3]) app.run(`placeCat(${index})`);
+}
+
+test("ライフ切れでリセットとホームと閉じるを表示しリセットにフォーカスする", () => {
+  const app = createApp(); loseAllLives(app);
+  assert.equal(app.run("state.lives"), 0);
+  assert.equal(app.get("gameOverActions").hidden, false);
+  assert.equal(app.get("dismissDialogBtn").hidden, false);
+  assert.equal(app.get("closeDialogBtn").hidden, true);
+  assert.equal(app.document.activeElement, app.get("dialogResetBtn"));
+  app.get("dialogResetBtn").dispatch("click");
+  assert.equal(app.run("state.lives"), 3);
+  assert.equal(app.run("state.marks.every(mark => mark === EMPTY)"), true);
+  assert.equal(app.get("resultDialog").classList.contains("open"), false);
+  assert.equal(app.get("gameScreen").hidden, false);
+  assert.equal(app.document.activeElement, app.get("board").children[0]);
+});
+
+test("ゲームオーバーからホームへ戻り進行状況を保持する", () => {
+  const app = createApp(); loseAllLives(app);
+  app.get("dialogHomeBtn").dispatch("click");
+  assert.equal(app.get("homeScreen").hidden, false);
+  assert.equal(app.get("gameScreen").hidden, true);
+  assert.equal(app.get("resultDialog").classList.contains("open"), false);
+  assert.equal(app.run("state.lives"), 0);
+  assert.equal(app.document.activeElement, app.get("continueBtn"));
+});
+
+test("右上の閉じるはライフ切れの盤面に戻りクリア時の操作を変えない", () => {
+  const app = createApp(); loseAllLives(app);
+  app.get("dismissDialogBtn").dispatch("click");
+  assert.equal(app.get("resultDialog").classList.contains("open"), false);
+  assert.equal(app.run("state.lives"), 0);
+  assert.equal(app.get("gameScreen").hidden, false);
+  app.run('openDialog("クリア", "完了")');
+  assert.equal(app.get("gameOverActions").hidden, true);
+  assert.equal(app.get("dismissDialogBtn").hidden, true);
+  assert.equal(app.get("closeDialogBtn").hidden, false);
+  assert.equal(app.get("closeDialogBtn").textContent, "つづける");
+});

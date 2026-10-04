@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meow Logic</title>
   <script src="./theme.js?v=1"></script>
-  <link rel="stylesheet" href="./styles.css?v=12">
+  <link rel="stylesheet" href="./styles.css?v=13">
 </head>
 <body>
   <main id="homeScreen" class="app home-screen">
@@ -91,9 +91,14 @@
   <div id="resultDialog" class="dialog" aria-hidden="true">
     <div class="dialog-backdrop"></div>
     <section class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultText">
+      <button id="dismissDialogBtn" class="dialog-close" type="button" aria-label="ダイアログを閉じる" hidden>×</button>
       <p id="resultCat" class="result-cat" aria-hidden="true">=^._.^=</p>
       <h2 id="resultTitle">クリア</h2>
       <p id="resultText">すべてのネコを見つけました。</p>
+      <div id="gameOverActions" class="dialog-actions" hidden>
+        <button id="dialogResetBtn" class="primary-action" type="button">リセット</button>
+        <button id="dialogHomeBtn" type="button">ホームに戻る</button>
+      </div>
       <button id="closeDialogBtn" type="button">つづける</button>
     </section>
   </div>
@@ -106,6 +111,6 @@
   <script src="./progression.js?v=2"></script>
   <script src="./generated-level-store.js?v=2"></script>
   <script src="./game-state.js"></script>
-  <script src="./main.js?v=9"></script>
+  <script src="./main.js?v=10"></script>
 </body>
 </html>

@@ -796,3 +796,20 @@ h1 {
   background: #532c40;
   color: #ffb8d4;
 }
+
+.dialog-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.6rem;
+}
+
+.dialog-actions {
+  display: grid;
+  gap: 10px;
+}

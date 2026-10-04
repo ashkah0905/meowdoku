@@ -53,6 +53,10 @@ const resultDialog = document.querySelector("#resultDialog");
 const resultTitle = document.querySelector("#resultTitle");
 const resultText = document.querySelector("#resultText");
 const closeDialogBtn = document.querySelector("#closeDialogBtn");
+const dismissDialogBtn = document.querySelector("#dismissDialogBtn");
+const gameOverActions = document.querySelector("#gameOverActions");
+const dialogResetBtn = document.querySelector("#dialogResetBtn");
+const dialogHomeBtn = document.querySelector("#dialogHomeBtn");
 const levelTransition = document.querySelector("#levelTransition");
 const transitionLevelTitle = document.querySelector("#transitionLevelTitle");
 const transitionProgress = document.querySelector("#transitionProgress");
@@ -632,13 +636,17 @@ function openDialog(title, text) {
   dialogReturnFocus = Number.isInteger(state.selected)
     ? { cellIndex: String(state.selected) }
     : { element: activeElement };
-  dialogMode = title === "クリア" ? "clear" : "message";
+  dialogMode = title === "クリア" ? "clear" : title === "ゲームオーバー" ? "game-over" : "message";
+  const isGameOver = dialogMode === "game-over";
+  gameOverActions.hidden = !isGameOver;
+  dismissDialogBtn.hidden = !isGameOver;
+  closeDialogBtn.hidden = isGameOver;
   resultTitle.textContent = title;
   resultText.textContent = text;
   closeDialogBtn.textContent = dialogMode === "clear" ? "つづける" : "もどる";
   resultDialog.classList.add("open");
   resultDialog.setAttribute("aria-hidden", "false");
-  closeDialogBtn.focus();
+  (isGameOver ? dialogResetBtn : closeDialogBtn).focus();
 }
 
 function closeDialog() {
@@ -881,6 +889,12 @@ autoCrossToggle.addEventListener("change", () => {
   );
   saveGame();
   render();
+});
+dismissDialogBtn.addEventListener("click", closeDialog);
+dialogHomeBtn.addEventListener("click", showHome);
+dialogResetBtn.addEventListener("click", () => {
+  resetLevel();
+  boardEl.querySelector(".cell")?.focus();
 });
 closeDialogBtn.addEventListener("click", () => {
   if (dialogMode === "clear") {
